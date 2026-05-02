@@ -36,6 +36,17 @@ build/
 .vscode/
 bin/
 
+### env files ###
+.env
+.env.*
+!.env.example
+
+### Copilot / Meta ###
+.github/
+
+### firebase ###
+src/main/resources/batdongscam-firebase-adminsdk-fbsvc-*.json
+
 ### OS Files ###
 .DS_Store
 Thumbs.db
@@ -43,11 +54,6 @@ Thumbs.db
 ### Logs ###
 *.log
 logs/
-
-### Environment Files ###
-.env
-.env.*
-!.env.example
 
 ### Runtime and Temp ###
 *.tmp

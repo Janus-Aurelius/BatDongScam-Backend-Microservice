@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: core-macroservice
+  datasource:
+    # Update these with your local PostgreSQL credentials
+    url: jdbc:postgresql://localhost:5432/batdongsan_db
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        # This tells Hibernate to automatically create schemas if they don't exist
+        hbm2ddl.create_namespaces: true
+
+# Modulith allows us to log events passing between modules
+logging:
+  level:
+    org.springframework.modulith: DEBUG
