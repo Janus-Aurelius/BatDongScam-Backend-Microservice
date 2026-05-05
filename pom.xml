@@ -43,6 +43,8 @@
         <stripe.version>32.2.0-beta.2</stripe.version>
         <jjwt.version>0.13.0</jjwt.version>
         <cloudinary.version>1.39.0</cloudinary.version>
+		<junit.version>5.11.0</junit.version>
+		<moneta.version>1.4.4</moneta.version>
 	</properties>
 
 	<!-- DEPENDENCY MANAGEMENT: Defines versions, DOES NOT automatically import them -->
@@ -66,8 +68,10 @@
 			<dependency>
 				<groupId>org.junit.jupiter</groupId>
 				<artifactId>junit-jupiter-api</artifactId>
-				<version>5.11.0</version> <type>pom</type>
+				<version>${junit.version}</version> <type>pom</type>
 			</dependency>
+
+
 			
 			<!-- Your Specific Third-Party Libraries -->
 			<dependency>
@@ -105,6 +109,13 @@
 				<artifactId>cloudinary-http44</artifactId>
 				<version>${cloudinary.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.javamoney</groupId>
+				<artifactId>moneta</artifactId>
+				<version>${moneta.version}</version>
+				<type>pom</type>
+				<scope>compile</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -123,6 +134,15 @@
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
