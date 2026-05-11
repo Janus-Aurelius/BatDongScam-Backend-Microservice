@@ -8,6 +8,7 @@ import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
 import com.se.bds.core.transaction.internal.application.command.CreatePurchaseContractCommand;
 import com.se.bds.core.transaction.internal.application.port.in.DepositContractUseCase;
 import com.se.bds.core.transaction.internal.application.port.in.PurchaseContractUseCase;
+import com.se.bds.core.transaction.internal.application.port.out.PurchaseContractRepository;
 import com.se.bds.core.transaction.internal.domain.model.ContractStatus;
 import com.se.bds.core.transaction.internal.domain.model.ContractType;
 import com.se.bds.core.transaction.internal.domain.model.DepositContract;
@@ -27,8 +28,8 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     private final PurchaseContractRepository purchaseContractRepository;
     private final PropertyFacade propertyFacade;
     private final ApplicationEventPublisher eventPublisher;
-    private final ContractType contractType;
     private final DepositContractUseCase depositContractUseCase;
+    private final com.se.bds.core.transaction.internal.application.port.out.DepositContractRepository depositContractRepository;
 
 
     /**
@@ -38,17 +39,18 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     @Override
     @Transactional
     public PurchaseContract createPurchaseContract(CreatePurchaseContractCommand command) {
-        propertyFacade.validatePropertyAvailableForContract(new PropertyId(command.propertyId()), contractType.PURCHASE);
+        propertyFacade.validatePropertyAvailableForContract(new PropertyId(command.propertyId()), ContractType.PURCHASE.name());
 
-        if (purchaseContractRepository.existActiveContractForProperty(command.propertyId()))
+        if (purchaseContractRepository.existsActiveContractForProperty(command.propertyId()))
         {
             throw new IllegalArgumentException("Active contract already exists for this property");
         }
         // 1. transition logic
         // check for deposit contract
+        DepositContract deposit = null;
         if (command.depositContractId()!=null)
         {
-            DepositContract deposit = depositContractRepository.findById(command.depositContractId())
+            deposit = depositContractRepository.findById(command.depositContractId())
                     //TODO align error msg with SRS
                     .orElseThrow(() -> new IllegalArgumentException("Deposit contract not found"));
             if (deposit.getStatus() != ContractStatus.ACTIVE)
@@ -71,11 +73,14 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         PurchaseContract contract = new PurchaseContract();
         contract.setPropertyId(command.propertyId());
         contract.setCustomerId(command.customerId());
-        contract.setDepositContractId(command.depositContractId());
+        if (deposit != null) {
+            contract.setDepositContract(deposit);
+        }
+        contract.setPropertyValue(command.agreedPrice());
         contract.setAdvancePaymentAmount(command.advancePaymentAmount());
-        contract.setAdvancePaymentDeadline(command.advancePaymentDeadline());
-        contract.setFinalPaymentDeadline(command.setFinalPaymentDeadline());
-        contract.setNote(command.setNote());
+        if (command.advancePaymentDeadline() != null) contract.setStartDate(command.advancePaymentDeadline());
+        if (command.finalPaymentDeadline() != null) contract.setEndDate(command.finalPaymentDeadline());
+        contract.setSpecialTerms(command.note());
         contract.setStatus(ContractStatus.DRAFT);
         return purchaseContractRepository.save(contract);
     }
@@ -111,10 +116,11 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         ContractStatus oldStatus = contract.getStatus();
 
         contract.setStatus(ContractStatus.CANCELLED);
-        contract.setCancellationReason(reason);
+        contract.setCancellationReason("Cancelled by customer");
         // TODO check business logic for who can cancel the contract
         contract.setCancelledBy(Role.CUSTOMER);
-        publishStatusEvent(contract,oldStatus, ContractStatus.CANCELLED);
+        PurchaseContract saved = purchaseContractRepository.save(contract);
+        publishStatusEvent(contract, oldStatus, ContractStatus.CANCELLED);
         return saved;
     }
 
@@ -125,8 +131,14 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     @Override
     @Transactional
     public PurchaseContract voidPurchaseContract(UUID contractId) {
-        //TODO check business context of who can make the decision
-        return cancelPurchaseContract(contractId, "Voided by Admin");
+        PurchaseContract contract = getContract(contractId);
+        ContractStatus oldStatus = contract.getStatus();
+        contract.setStatus(ContractStatus.CANCELLED);
+        contract.setCancellationReason("Voided by Admin");
+        contract.setCancelledBy(Role.ADMIN);
+        PurchaseContract saved = purchaseContractRepository.save(contract);
+        publishStatusEvent(contract, oldStatus, ContractStatus.CANCELLED);
+        return saved;
     }
 
     /**
@@ -142,9 +154,9 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         publishStatusEvent(contract, oldStatus, ContractStatus.COMPLETED);
         // 2. transition logic to complete the linked
         // deposit contract once purchases is completed
-        if (contract.getDepositContractId(contractId) != null)
+        if (contract.getDepositContract() != null)
         {
-            depositContractUseCase.completeDepositContract(contract.getDepositContractId());
+            depositContractUseCase.completeDepositContract(contract.getDepositContract().getId());
         }
     }
     private PurchaseContract transitionStatus(UUID contractId, ContractStatus newStatus) {
@@ -152,7 +164,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         ContractStatus oldStatus = contract.getStatus();
         contract.setStatus(newStatus);
         PurchaseContract saved = purchaseContractRepository.save(contract);
-        publishStatusEvent(contract,oldStatus,newStatus.name());
+        publishStatusEvent(contract, oldStatus, newStatus);
         return saved;
     }
 
@@ -161,8 +173,8 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         return purchaseContractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Purchase contract not found"));
     }
-    private void publishStatusEvent(PurchaseContract contract, ContractStatus oldStatus, String name) {
+    private void publishStatusEvent(PurchaseContract contract, ContractStatus oldStatus, ContractStatus newStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(new ContractId(contract.getId()),
-                ContractType.PURCHASE, contract.getPropertyId(),oldStatus,newStatus, Instant.now()));
+                ContractType.PURCHASE.name(), contract.getPropertyId(), oldStatus.name(), newStatus.name(), Instant.now()));
     }
 }

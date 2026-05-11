@@ -23,5 +23,10 @@ public interface PropertyUseCase {
 
     //property type
     PropertyType createPropertyType(CreatePropertyTypeCommand command);
+    PropertyType updatePropertyType(UUID id, UpdatePropertyTypeCommand command);
+    void deletePropertyType(UUID id);
     Page<PropertyType> getAllPropertyTypes(Pageable pageable);
+    java.util.List<UUID> getAllAvailablePropertyTypeIds();
+    String getPropertyTypeName(UUID propertyTypeId);
+    int countPropertiesByPropertyTypeId(UUID propertyTypeId);
 }

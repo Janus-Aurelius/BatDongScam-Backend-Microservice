@@ -1,7 +1,9 @@
 package com.se.bds.core.property.api;
 
 import com.se.bds.core.shared.dto.PropertySnapshot;
+import com.se.bds.core.shared.dto.property.PropertyCard;
 import com.se.bds.core.shared.ids.PropertyId;
+import org.springframework.data.domain.Page;
 
 import java.awt.print.Pageable;
 import java.math.BigDecimal;
@@ -32,7 +34,6 @@ public interface PropertyFacade {
     //customer module (favorites)
     /**
      * Replaces propertyService.getFavoritePropertyCards().
-     * TODO: check Note: PropertyCard MUST be moved to the shared kernel.
      */
 
     Page<PropertyCard> getFavoritePropertyCard(List<UUID> propertyIds, Pageable pageable);

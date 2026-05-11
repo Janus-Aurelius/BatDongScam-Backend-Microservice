@@ -4,9 +4,7 @@ import com.se.bds.core.property.api.event.PropertyAgentAssignedEvent;
 import com.se.bds.core.property.api.event.PropertyStatusChangedEvent;
 import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
-import com.se.bds.core.property.internal.domain.model.Property;
-import com.se.bds.core.property.internal.domain.model.PropertyStatus;
-import com.se.bds.core.property.internal.domain.model.PropertyType;
+import com.se.bds.core.property.internal.domain.model.*;
 import com.se.bds.core.shared.ids.PropertyId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
-import static java.lang.System.getProperty;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 class PropertyServiceImpl implements PropertyUseCase {
-    private final PropertyRepository propertyRepository;
+    private final com.se.bds.core.property.application.port.out.PropertyRepository propertyRepository;
+    private final com.se.bds.core.property.application.port.out.PropertyTypeRepository propertyTypeRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -35,21 +32,36 @@ class PropertyServiceImpl implements PropertyUseCase {
     {
         Property property = new Property();
         property.setOwnerId(command.ownerId());
-        // FIXME: Implement the NOTE: In a real implementation, you'd fetch PropertyType and Ward from their respective repositories here
-        //  property.setPropertyType(typeRepository.findById(command.propertyTypeId()).orElseThrow());
+        PropertyType propertyType = propertyTypeRepository.findById(command.propertTypeId())
+                .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+        property.setPropertyType(propertyType);
+        property.setWardId(command.wardId());
         property.setTitle(command.title());
         property.setDescription(command.description());
-        property.setDescription(command.description());
+        property.setPriceAmount(command.priceAmount());
         property.setArea(command.area());
         property.setRooms(command.rooms());
         property.setBedrooms(command.bedrooms());
         property.setBathrooms(command.bathrooms());
         property.setFloors(command.floors());
 
-        // TODO:Map enums safely:
-        //   property.setTransactionType(TransactionTypeEnum.valueOf(command.transactionType()));
+        if (command.houseOrientation() != null) {
+            property.setHouseOrientation(Orientation.valueOf(command.houseOrientation()));
+        }
+        if (command.balconyOrientation() != null) {
+            property.setBalconyOrientation(Orientation.valueOf(command.balconyOrientation()));
+        }
+        if (command.transactionType() != null) {
+            property.setTransactionType(TransactionType.valueOf(command.transactionType()));
+        }
+
         property.setFullAddress(command.address());
         property.setStatus(PropertyStatus.PENDING);
+        
+        property.setCommissionRate(java.math.BigDecimal.ZERO);
+        property.setServiceFeeAmount(java.math.BigDecimal.ZERO);
+        property.setServiceFeeCollectedAmount(java.math.BigDecimal.ZERO);
+
         Property saved = propertyRepository.save(property);
 
         //TODO: Handle file uploads (ideally via an outbound port)
@@ -85,10 +97,13 @@ class PropertyServiceImpl implements PropertyUseCase {
     public Property updatePropertyStatus(UUID propertyId, UpdatePropertyStatusCommand command) {
         Property property = getProperty(propertyId);
         String oldStatus = property.getStatus().name();
-        property.setStatus(PropertyStatus.valueOf(command.targetStatus()));
+        PropertyStatus newStatus = PropertyStatus.valueOf(command.targetStatus());
+        property.setStatus(newStatus);
+        
+        Property saved = propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
-                new PropertyId(propertyId), oldStatus, command.targetStatus(), Instant.now()
+                new PropertyId(propertyId), oldStatus, newStatus, Instant.now()
         ));
         return saved;
     }
@@ -161,7 +176,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         propertyType.setTypeName(command.typeName());
         propertyType.setDescription(command.description());
         propertyType.setIsActive(command.isActive());
-        return propertyTypeRepository.save(type);
+        return propertyTypeRepository.save(propertyType);
     }
 
     /**
@@ -171,6 +186,42 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     public Page<PropertyType> getAllPropertyTypes(Pageable pageable) {
         return propertyTypeRepository.findAll(pageable);
+    }
+
+    @Override
+    public PropertyType updatePropertyType(UUID id, UpdatePropertyTypeCommand command) {
+        PropertyType propertyType = propertyTypeRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+        
+        if (command.typeName() != null) propertyType.setTypeName(command.typeName());
+        if (command.description() != null) propertyType.setDescription(command.description());
+        if (command.isActive() != null) propertyType.setIsActive(command.isActive());
+        
+        return propertyTypeRepository.save(propertyType);
+    }
+
+    @Override
+    public void deletePropertyType(UUID id) {
+        PropertyType propertyType = propertyTypeRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+        propertyTypeRepository.delete(propertyType);
+    }
+
+    @Override
+    public java.util.List<UUID> getAllAvailablePropertyTypeIds() {
+        return propertyTypeRepository.getAllActiveIds();
+    }
+
+    @Override
+    public String getPropertyTypeName(UUID propertyTypeId) {
+        return propertyTypeRepository.findById(propertyTypeId)
+            .map(PropertyType::getTypeName)
+            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+    }
+
+    @Override
+    public int countPropertiesByPropertyTypeId(UUID propertyTypeId) {
+        return propertyRepository.countByPropertyTypeId(propertyTypeId);
     }
 
     private Property getProperty(UUID propertyId)

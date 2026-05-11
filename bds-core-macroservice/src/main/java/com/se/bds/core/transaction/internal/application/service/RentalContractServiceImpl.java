@@ -8,6 +8,8 @@ import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
 import com.se.bds.core.transaction.internal.application.command.CreateRentalContractCommand;
 import com.se.bds.core.transaction.internal.application.port.in.DepositContractUseCase;
 import com.se.bds.core.transaction.internal.application.port.in.RentalContractUseCase;
+import com.se.bds.core.transaction.internal.application.port.out.DepositContractRepository;
+import com.se.bds.core.transaction.internal.application.port.out.RentalContractRepository;
 import com.se.bds.core.transaction.internal.domain.model.ContractStatus;
 import com.se.bds.core.transaction.internal.domain.model.ContractType;
 import com.se.bds.core.transaction.internal.domain.model.DepositContract;
@@ -37,11 +39,12 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
     @Override
     @Transactional
     public RentalContract createRentalContract(CreateRentalContractCommand command) {
-        propertyFacade.validatePropertyAvailableForContract(new PropertyId(command.propertyId()), ContractType.RENTAL);
+        propertyFacade.validatePropertyAvailableForContract(new PropertyId(command.propertyId()), ContractType.RENTAL.name());
 
         //1. validate deposit contract if provided
+        DepositContract deposit = null;
         if (command.depositContractId() != null) {
-            DepositContract deposit = depositContractRepository.findById(command.depositContractId())
+            deposit = depositContractRepository.findById(command.depositContractId())
                     .orElseThrow (() -> new IllegalArgumentException("Deposit contract not found"));
             if (deposit.getStatus() != ContractStatus.ACTIVE)
             {
@@ -64,13 +67,14 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
         RentalContract rentalContract = new RentalContract();
         rentalContract.setCustomerId(command.customerId());
         rentalContract.setPropertyId(command.propertyId());
-        rentalContract.setDepositContractId(command.depositContractId());
+        if (deposit != null) {
+            rentalContract.setDepositContract(deposit);
+        }
         rentalContract.setMonthlyRentAmount(command.monthlyRentAmount());
         rentalContract.setSecurityDepositAmount(command.securityDepositAmount());
-        rentalContract.setDurationMonth(command.durationMonths());
-        rentalContract.setPaymentCycleMonths(command.paymentCycleMonths());
-        rentalContract.setExpectedStartDate(command.expectedStartDate());
-        rentalContract.setNote(command.note());
+        rentalContract.setMonthCount(command.durationMonths());
+        rentalContract.setStartDate(command.expectedStartDate());
+        rentalContract.setSpecialTerms(command.note());
         rentalContract.setStatus(ContractStatus.DRAFT);
 
         return rentalContractRepository.save(rentalContract);
@@ -148,9 +152,9 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
 
         //3. transition logic to complete the linked deposit contract once rental becomes
         //active (e.g first month rent paid)
-        if (contract.getDepositContractId() != null)
+        if (contract.getDepositContract() != null)
         {
-            depositContractUseCase.completeDepositContract(contract.getDepositContractId());
+            depositContractUseCase.completeDepositContract(contract.getDepositContract().getId());
         }
         return saved;
     }
@@ -171,12 +175,21 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
     private RentalContract getContract(UUID contractId) {
         return rentalContractRepository.findById(contractId)
                 //TODO align with error msg SRS
-                .orElseThrow(()-> new IllegalArgumentException("Rental contract not found"))
+                .orElseThrow(()-> new IllegalArgumentException("Rental contract not found"));
     }
 
-    private void publishStatusEvent(RentalContract contract, ContractStatus oldStatus, ContractStatus contractStatus) {
+    private RentalContract transitionStatus(UUID contractId, ContractStatus newStatus) {
+        RentalContract contract = getContract(contractId);
+        ContractStatus oldStatus = contract.getStatus();
+        contract.setStatus(newStatus);
+        RentalContract saved = rentalContractRepository.save(contract);
+        publishStatusEvent(contract, oldStatus, newStatus);
+        return saved;
+    }
+
+    private void publishStatusEvent(RentalContract contract, ContractStatus oldStatus, ContractStatus newStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(
-                new ContractId(contract.getId(), ContractType.RENTAL, contract.getPropertyId(), oldStatus,newStatus, Instant.now())
+                new ContractId(contract.getId()), ContractType.RENTAL.name(), contract.getPropertyId(), oldStatus.name(), newStatus.name(), Instant.now()
         ));
     }
 
