@@ -2,6 +2,7 @@ package com.se.bds.core.transaction.api;
 
 
 import com.se.bds.core.shared.dto.RevenuePaymentSnapshot;
+import com.se.bds.core.transaction.api.dto.ContractHistoryDataPoint;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,7 +11,7 @@ import java.util.UUID;
 //return read only dtos from the shared kernel
 public interface TransactionFacade {
     //property module integrations
-    List<ContractHistoryDataPoint> getContractHistoryForProperty (UUID propertyId, boolean includePastContracts);
+    List<ContractHistoryDataPoint> getContractHistoryForProperty(UUID propertyId, boolean includePastContracts);
 
     boolean hasActiveContractForProperty (UUID propertyId, String contractType);
 

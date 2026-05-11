@@ -32,4 +32,3 @@ public class SimplePropertyCard extends AbstractBaseDataResponse {
     private String agentLastName;
     private String agentTier;
 }
-}

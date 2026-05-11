@@ -10,9 +10,7 @@ import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
 import com.se.bds.core.property.internal.domain.model.Property;
 import com.se.bds.core.property.internal.domain.model.PropertyType;
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import okhttp3.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -52,8 +50,8 @@ public class PropertyController {
             @RequestPart(value = "documents", required = false) MultipartFile[] documents,
             @PathVariable UUID propertyId)
     {
-        UpdatePropertyCommand command = propertyWebMapper.toUpdatePropertyComman(request);
-        return ResponseEntity.ok(propertyUseCase.updateProperty(propertyId, command,images,documents))
+        UpdatePropertyCommand command = propertyWebMapper.toUpdatePropertyCommand(request);
+        return ResponseEntity.ok(propertyUseCase.updateProperty(propertyId, command,images,documents));
     }
 
     // TODO check the business context of this action

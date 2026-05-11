@@ -7,6 +7,7 @@ import com.se.bds.core.shared.ids.PropertyId;
 import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
 import com.se.bds.core.transaction.internal.application.command.CreateDepositContractCommand;
 import com.se.bds.core.transaction.internal.application.port.in.DepositContractUseCase;
+import com.se.bds.core.transaction.internal.application.port.out.DepositContractRepository;
 import com.se.bds.core.transaction.internal.domain.model.Contract;
 import com.se.bds.core.transaction.internal.domain.model.ContractStatus;
 import com.se.bds.core.transaction.internal.domain.model.ContractType;
@@ -24,7 +25,6 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     private final DepositContractRepository depositContractRepository;
     private final PropertyFacade propertyFacade;
     private final ApplicationEventPublisher eventPublisher;
-    private final ContractType contractType;
 
     /**
      * @param createDepositContractCommand
@@ -33,19 +33,19 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     @Override
     @Transactional
     public DepositContract createDepositContract(CreateDepositContractCommand createDepositContractCommand) {
-        propertyFacade.validatePropertyAvailableForContract(new PropertyId(createDepositContractCommand.propertyId()),contractType.DEPOSIT);
-        if (depositContractRepository.existActiveContractForProperty(createDepositContractCommand.propertyId()))
+        propertyFacade.validatePropertyAvailableForContract(new PropertyId(createDepositContractCommand.propertyId()), ContractType.DEPOSIT.name());
+        if (depositContractRepository.existsActiveContractForProperty(createDepositContractCommand.propertyId()))
         {
             //TODO: wire error message with SRS
-            throw new IllegalArgumentException("Active contract already exist for this property")
+            throw new IllegalArgumentException("Active contract already exist for this property");
         }
         DepositContract contract = new DepositContract();
         contract.setPropertyId(createDepositContractCommand.propertyId());
         contract.setCustomerId(createDepositContractCommand.customerId());
         contract.setAgreedPrice(createDepositContractCommand.agreedPrice());
         contract.setDepositAmount(createDepositContractCommand.depositAmount());
-        contract.setExpectedSignDate(createDepositContractCommand.expectedSignDate());
-        contract.setNote(createDepositContractCommand.note());
+        contract.setStartDate(createDepositContractCommand.expectedSignDate());
+        contract.setSpecialTerms(createDepositContractCommand.note());
         contract.setStatus(ContractStatus.DRAFT);
         return depositContractRepository.save(contract);
     }
@@ -133,17 +133,15 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     }
 
     private void publishStatusEvent(DepositContract contract, ContractStatus oldStatus, ContractStatus contractStatus) {
-        eventPublisher.publishEvent((
-                new ContractStatusChangedEvent(
-                        new ContractId(contract.getId(), ContractType.DEPOSIT, contract.getPropertyId(),
-                                oldStatus, newstatus, Instant.now())
-                )
-                ));
+        eventPublisher.publishEvent(new ContractStatusChangedEvent(
+                new ContractId(contract.getId()), ContractType.DEPOSIT.name(), contract.getPropertyId(),
+                        oldStatus.name(), contractStatus.name(), Instant.now()
+        ));
     }
 
     private DepositContract getContract(UUID contractId) {
         return depositContractRepository.findById(contractId)
-        .orElseThrow() -> new IllegalArgumentException("Deposit contract with id " + contractId + " does not exist");
+        .orElseThrow(() -> new IllegalArgumentException("Deposit contract with id " + contractId + " does not exist"));
     }
 
 }
