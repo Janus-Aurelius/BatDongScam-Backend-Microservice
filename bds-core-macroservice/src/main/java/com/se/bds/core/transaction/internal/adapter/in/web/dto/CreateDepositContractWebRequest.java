@@ -11,10 +11,10 @@ import java.util.UUID;
 public record CreateDepositContractWebRequest(
         @NotNull UUID propertyId,
         @NotNull UUID customerId,
+        @NotNull String mainContractType,
         @NotNull @Positive BigDecimal depositAmount,
         @NotNull @Positive BigDecimal agreedPrice,
         @NotNull @Future LocalDate expectedSignDate,
         String note
-
-        ) {
+) {
 }

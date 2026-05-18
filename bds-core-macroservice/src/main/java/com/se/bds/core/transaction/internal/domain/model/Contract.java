@@ -9,9 +9,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Abstract aggregate root for the Transaction bounded context.
@@ -120,4 +118,95 @@ public abstract class Contract {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
+    //Domain logic
+    private static final Set<ContractStatus> TERMINAL_STATUSES = EnumSet.of(ContractStatus.COMPLETED, ContractStatus.CANCELLED);
+
+    /**
+     * @return true if the contract is in a terminal state (COMPLETED or CANCELLED)
+     */
+    public boolean isTerminal()
+    {
+        return TERMINAL_STATUSES.contains(this.status);
+    }
+
+    /**
+     * @return true if the contract is currently ACTIVE
+     */
+    public boolean isActive()
+    {
+        return this.status == ContractStatus.ACTIVE;
+    }
+
+    /**
+     * Guarded status transition. Prevents transitions from terminal states.
+     * @param newStatus the target status
+     * @return the previous status (for event publishing)
+     * @throws IllegalStateException if the contract is in a terminal state
+     */
+
+    public ContractStatus transitionTo(ContractStatus newStatus)
+    {
+        if (isTerminal())
+        {
+            throw new IllegalStateException(
+                    //TODO sync the error msg with srs
+                    "Cannot transition contract " + this.id + " from terminal status "
+                            + this.status + " to " + newStatus);
+        }
+        ContractStatus oldStatus = this.status;
+        this.status = newStatus;
+        return oldStatus;
+    }
+
+    /**
+     * Activates the contract. Only allowed from non-terminal states.
+     * @return the previous status
+     */
+
+    public ContractStatus activate()
+    {
+        return transitionTo(ContractStatus.ACTIVE);
+    }
+
+    /**
+     * Completes the contract. Only allowed from ACTIVE.
+     * @return the previous status
+     * @throws IllegalStateException if the contract is not ACTIVE
+     */
+
+    public ContractStatus complete()
+    {
+        if (this.status != ContractStatus.ACTIVE)
+        {
+            throw new IllegalStateException(
+                    "Can only complete an ACTIVE contract, current: " + this.status
+            );
+        }
+        ContractStatus old = this.status;
+        this.status = ContractStatus.COMPLETED;
+        return old;
+    }
+
+    /**
+     * Cancels the contract with reason and initiator.
+     * @return previous status
+     */
+
+    public ContractStatus cancel(String reason, Role intiator)
+    {
+        if (isTerminal())
+        {
+            throw new IllegalStateException(
+                    "Cannot cancel contract " + this.id + " - already " + this.status
+            );
+        }
+        ContractStatus oldStatus = this.status;
+        this.status = ContractStatus.CANCELLED;
+        this.cancellationReason = reason;
+        this.cancelledBy = intiator;
+        this.cancelledAt = LocalDateTime.now();
+        return oldStatus;
+    }
 }

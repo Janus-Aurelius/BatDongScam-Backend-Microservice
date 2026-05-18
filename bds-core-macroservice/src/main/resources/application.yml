@@ -2,10 +2,10 @@ spring:
   application:
     name: core-macroservice
   datasource:
-    # Update these with your local PostgreSQL credentials
-    url: jdbc:postgresql://localhost:5432/batdongsan_db
-    username: postgres
-    password: password
+    # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
   jpa:
     hibernate:
       ddl-auto: update

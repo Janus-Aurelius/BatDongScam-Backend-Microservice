@@ -6,6 +6,8 @@ import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
 import com.se.bds.core.property.internal.domain.model.*;
 import com.se.bds.core.shared.ids.PropertyId;
+import com.se.bds.core.property.internal.application.port.out.PropertyRepository;
+import com.se.bds.core.property.internal.application.port.out.PropertyTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -18,12 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
+import static java.lang.String.valueOf;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 class PropertyServiceImpl implements PropertyUseCase {
-    private final com.se.bds.core.property.application.port.out.PropertyRepository propertyRepository;
-    private final com.se.bds.core.property.application.port.out.PropertyTypeRepository propertyTypeRepository;
+    private final PropertyRepository propertyRepository;
+    private final PropertyTypeRepository propertyTypeRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -96,14 +100,13 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     public Property updatePropertyStatus(UUID propertyId, UpdatePropertyStatusCommand command) {
         Property property = getProperty(propertyId);
-        String oldStatus = property.getStatus().name();
         PropertyStatus newStatus = PropertyStatus.valueOf(command.targetStatus());
-        property.setStatus(newStatus);
+        PropertyStatus oldStatus = property.transitionStatus(newStatus);
         
         Property saved = propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
-                new PropertyId(propertyId), oldStatus, newStatus, Instant.now()
+                new PropertyId(propertyId), oldStatus.name(), newStatus, Instant.now()
         ));
         return saved;
     }
@@ -115,12 +118,12 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Transactional
     public void deleteProperty(UUID propertyId) {
         Property property = getProperty(propertyId);
-        String oldStatus = property.getStatus().name();
-        property.setStatus(PropertyStatus.DELETED);
+
+        PropertyStatus oldStatus = property.markAsDeleted();
         propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
-           new PropertyId(propertyId), oldStatus,PropertyStatus.DELETED, Instant.now()
+           new PropertyId(propertyId), oldStatus.name(),PropertyStatus.DELETED, Instant.now()
         ));
 
     }
@@ -133,8 +136,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Transactional
     public void assignAgent(UUID propertyId, UUID agentId) {
         Property property = getProperty(propertyId);
-        UUID previousAgentId = property.getAssignedAgentId();
-        property.setAssignedAgentId(agentId);
+        UUID previousAgentId = property.assignAgent(agentId);
         propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyAgentAssignedEvent(

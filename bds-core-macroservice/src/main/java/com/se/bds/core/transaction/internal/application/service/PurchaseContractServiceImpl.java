@@ -3,6 +3,7 @@ package com.se.bds.core.transaction.internal.application.service;
 import com.se.bds.core.property.api.PropertyFacade;
 import com.se.bds.core.shared.enums.Role;
 import com.se.bds.core.shared.ids.ContractId;
+import com.se.bds.core.shared.dto.PropertySnapshot;
 import com.se.bds.core.shared.ids.PropertyId;
 import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
 import com.se.bds.core.transaction.internal.application.command.CreatePurchaseContractCommand;
@@ -76,6 +77,12 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         if (deposit != null) {
             contract.setDepositContract(deposit);
         }
+
+        PropertySnapshot property = propertyFacade.getPropertySnapshot(new PropertyId(command.propertyId()));
+        java.math.BigDecimal commissionRate = property.commissionRate() != null ? property.commissionRate() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal commissionAmount = command.agreedPrice().multiply(commissionRate);
+        contract.setCommissionAmount(commissionAmount);
+
         contract.setPropertyValue(command.agreedPrice());
         contract.setAdvancePaymentAmount(command.advancePaymentAmount());
         if (command.advancePaymentDeadline() != null) contract.setStartDate(command.advancePaymentDeadline());
@@ -113,12 +120,9 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     @Transactional
     public PurchaseContract cancelPurchaseContract(UUID contractId) {
         PurchaseContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-
-        contract.setStatus(ContractStatus.CANCELLED);
-        contract.setCancellationReason("Cancelled by customer");
         // TODO check business logic for who can cancel the contract
-        contract.setCancelledBy(Role.CUSTOMER);
+
+        ContractStatus oldStatus = contract.cancel("Cancelled by customer", Role.CUSTOMER);
         PurchaseContract saved = purchaseContractRepository.save(contract);
         publishStatusEvent(contract, oldStatus, ContractStatus.CANCELLED);
         return saved;
@@ -132,10 +136,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     @Transactional
     public PurchaseContract voidPurchaseContract(UUID contractId) {
         PurchaseContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.CANCELLED);
-        contract.setCancellationReason("Voided by Admin");
-        contract.setCancelledBy(Role.ADMIN);
+        ContractStatus oldStatus = contract.cancel("Voided by admin", Role.ADMIN);
         PurchaseContract saved = purchaseContractRepository.save(contract);
         publishStatusEvent(contract, oldStatus, ContractStatus.CANCELLED);
         return saved;
@@ -148,8 +149,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     @Transactional
     public void completePurchaseContract(UUID contractId) {
         PurchaseContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.COMPLETED);
+        ContractStatus oldStatus = contract.complete();
         purchaseContractRepository.save(contract);
         publishStatusEvent(contract, oldStatus, ContractStatus.COMPLETED);
         // 2. transition logic to complete the linked
@@ -161,8 +161,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     }
     private PurchaseContract transitionStatus(UUID contractId, ContractStatus newStatus) {
         PurchaseContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(newStatus);
+        ContractStatus oldStatus = contract.transitionTo(newStatus);
         PurchaseContract saved = purchaseContractRepository.save(contract);
         publishStatusEvent(contract, oldStatus, newStatus);
         return saved;

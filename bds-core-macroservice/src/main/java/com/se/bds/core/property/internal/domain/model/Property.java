@@ -4,12 +4,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.parameters.P;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Aggregate root for the Property bounded context.
@@ -55,6 +54,10 @@ public class Property {
     /** References Location module's Ward entity */
     @Column(name = "ward_id", nullable = false)
     private UUID wardId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ward_id", insertable = false, updatable = false)
+    private Ward ward;
 
     // ── Intra-module JPA relationship ──────────────────────────────────
 
@@ -150,4 +153,130 @@ public class Property {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
+    // Domain logic
+    private static final Set<PropertyStatus> TERMINAL_STATUSES =
+            EnumSet.of(PropertyStatus.SOLD,PropertyStatus.DELETED, PropertyStatus.REMOVED);
+
+
+    /**
+     * Validates that a status transition is allowed and applies it.
+     * @return the old status (for event publishing)
+     * @throws IllegalStateException if the transition is invalid
+     */
+
+    public PropertyStatus transitionStatus(PropertyStatus newStatus) {
+        if (TERMINAL_STATUSES.contains(this.status) && newStatus != PropertyStatus.AVAILABLE)
+        {
+            //TODO: sync with error msg in SRS
+            throw new IllegalStateException(
+                    "Cannot transition from terminal status " + this.status + " to " + newStatus);
+        }
+        PropertyStatus oldStatus = this.status;
+        this.status = newStatus;
+        return oldStatus;
+    }
+
+    /**
+     * Marks property as SOLD when a purchase contract is activated.
+     * @return the previous status
+     */
+
+    public PropertyStatus markAsSold()
+    {
+        return transitionStatus(PropertyStatus.SOLD);
+    }
+
+    /**
+     * Marks property as RENTED when a rental contract is activated.
+     * @return the previous status
+     */
+    public PropertyStatus markAsRented()
+    {
+        return transitionStatus(PropertyStatus.RENTED);
+    }
+
+    /**
+     * Returns property to AVAILABLE (e.g. when a rental contract completes).
+     * Only allowed from RENTED status.
+     * @return the previous status
+     */
+    public PropertyStatus markAsAvailable()
+    {
+        if (this.status != PropertyStatus.RENTED)
+        {
+            throw new IllegalStateException(
+                    "Cannot transition from status " + this.status + " to " + PropertyStatus.AVAILABLE
+            );
+        }
+        return transitionStatus(PropertyStatus.AVAILABLE);
+    }
+
+    /**
+     * Soft-deletes the property.
+     * @return the previous status
+     */
+
+    public PropertyStatus markAsDeleted()
+    {
+        return transitionStatus(PropertyStatus.DELETED);
+    }
+
+
+    /**
+     * Removes property due to violation report.
+     * @return the previous status
+     */
+
+    public PropertyStatus markAsRemoved()
+    {
+        return transitionStatus(PropertyStatus.REMOVED);
+    }
+
+
+    /**
+     * Records a service fee payment. Adds amount to collected total.
+     * @param amount the payment amount
+     * @return true if the service fee is now fully paid
+     */
+
+    public boolean recordServiceFeePayment (BigDecimal amount)
+    {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new IllegalArgumentException("Payment amount must be greater than zero");
+        }
+        this.serviceFeeCollectedAmount = this.serviceFeeCollectedAmount.add(amount);
+        return isSeviceFullyPaid();
+    }
+
+    /**
+     * @return true if the total collected service fee meets or exceeds the required amount
+     */
+
+    public boolean isSeviceFullyPaid() {
+        return this.serviceFeeCollectedAmount.compareTo(this.serviceFeeAmount) >= 0;
+    }
+
+    /**
+     * Assigns an agent and returns the previous agent ID (may be null).
+     */
+
+    public UUID assignAgent(UUID newAgentId)
+    {
+        UUID previous = this.assignedAgentId;
+        this.assignedAgentId = newAgentId;
+        return previous;
+    }
+
+    /**
+     * @return true if the property is in a terminal status
+     */
+
+    public boolean isTerminal()
+    {
+        return TERMINAL_STATUSES.contains(this.status);
+    }
+
 }
