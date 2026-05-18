@@ -113,7 +113,7 @@ public class PropertyController {
         return ResponseEntity.ok(propertyUseCase.searchProperties(command, pageable));
     }
 
-    @GetMapping("/public/properties/{propertyId")
+    @GetMapping("/public/properties/{propertyId}")
     public ResponseEntity<?> getPropertyDetails(@PathVariable UUID propertyId)
     {
         return ResponseEntity.ok(propertyUseCase.getPropertyDetail(propertyId));

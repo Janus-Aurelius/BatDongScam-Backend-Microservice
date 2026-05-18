@@ -239,6 +239,7 @@ class ContractEventHandler {
     private final PropertyRepository propertyRepository;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void onContractSigned(ContractSignedEvent event) {
         Property property = propertyRepository.findById(event.propertyId().value())
             .orElseThrow();
@@ -246,11 +247,12 @@ class ContractEventHandler {
         propertyRepository.save(property);
     }
 }
-```
 
 > [!WARNING]
-> **Why `AFTER_COMMIT`, not `BEFORE_COMMIT`?**
-> If the property status update fails, you do NOT want to roll back the contract signing. The contract is the source of truth. The property status update is a **projection** — it can be retried. Using `AFTER_COMMIT` ensures the contract commit is never endangered by a downstream listener failure.
+> **Why `AFTER_COMMIT` with `REQUIRES_NEW`?**
+> 1. **Isolation:** If the property status update fails, you do NOT want to roll back the contract signing. The contract is the source of truth. Using `AFTER_COMMIT` ensures the contract commit is never endangered.
+> 2. **Transactionality:** Since the publishing transaction is already committed, the listener runs *without* an active transaction. We MUST use `@Transactional(propagation = Propagation.REQUIRES_NEW)` so the listener's own DB writes are atomic and can be rolled back if they fail.
+
 
 **Kafka Bridge (infrastructure):**
 ```java

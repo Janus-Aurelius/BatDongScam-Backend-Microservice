@@ -42,11 +42,12 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
         DepositContract contract = new DepositContract();
         contract.setPropertyId(createDepositContractCommand.propertyId());
         contract.setCustomerId(createDepositContractCommand.customerId());
+        contract.setMainContractType(createDepositContractCommand.mainContractType());
         contract.setAgreedPrice(createDepositContractCommand.agreedPrice());
         contract.setDepositAmount(createDepositContractCommand.depositAmount());
         contract.setStartDate(createDepositContractCommand.expectedSignDate());
         contract.setSpecialTerms(createDepositContractCommand.note());
-        contract.setStatus(ContractStatus.DRAFT);
+        contract.transitionTo(ContractStatus.DRAFT);
         return depositContractRepository.save(contract);
     }
 
@@ -58,8 +59,7 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     @Transactional
     public DepositContract approveDepositContract(UUID contractId) {
         DepositContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.WAITING_OFFICIAL);
+        ContractStatus oldStatus = contract.transitionTo(ContractStatus.WAITING_OFFICIAL);
         DepositContract saved = depositContractRepository.save(contract);
         publishStatusEvent(contract,oldStatus, ContractStatus.WAITING_OFFICIAL);
         return saved;
@@ -73,8 +73,7 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     @Transactional
     public DepositContract markDepositContractPaperworkComplete(UUID contractId) {
         DepositContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.PENDING_PAYMENT);
+        ContractStatus oldStatus = contract.transitionTo(ContractStatus.PENDING_PAYMENT);
         DepositContract saved = depositContractRepository.save(contract);
         publishStatusEvent(contract,oldStatus,ContractStatus.PENDING_PAYMENT);
         return saved;
@@ -87,11 +86,8 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     @Override
     public DepositContract cancelDepositContract(UUID contractId, String reason) {
         DepositContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.CANCELLED);
-        contract.setCancellationReason(reason);
         //TODO add auth context and check cancellation permisison business context
-        contract.setCancelledBy(Role.CUSTOMER);
+        ContractStatus oldStatus = contract.cancel(reason,Role.CUSTOMER);
         DepositContract saved = depositContractRepository.save(contract);
         publishStatusEvent(contract,oldStatus,ContractStatus.CANCELLED);
         return saved;
@@ -126,8 +122,7 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     @Transactional
     public void completeDepositContract(UUID contractId) {
         DepositContract contract = getContract(contractId);
-        ContractStatus oldStatus = contract.getStatus();
-        contract.setStatus(ContractStatus.COMPLETED);
+        ContractStatus oldStatus = contract.complete();
         depositContractRepository.save(contract);
         publishStatusEvent(contract, oldStatus,ContractStatus.COMPLETED);
     }

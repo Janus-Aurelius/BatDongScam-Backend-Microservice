@@ -64,4 +64,25 @@ public class RentalContract extends Contract {
     /** Number of months with unpaid fees (for taking action when 3+ months unpaid) */
     @Column(name = "unpaid_months_count", nullable = false)
     private Integer unpaidMonthsCount = 0;
+
+    // ── Domain logic ───────────────────────────────────────────────────
+    /**
+     * Overrides base complete. A rental contract should only be completed
+     * when the security deposit has been settled (if one was collected).
+     */
+    @Override
+    public ContractStatus complete() {
+        if (this.securityDepositAmount != null
+                && this.securityDepositAmount.compareTo(BigDecimal.ZERO) > 0
+                && this.securityDepositStatus != null
+                && this.securityDepositStatus != SecurityDepositStatus.RETURNED_TO_CUSTOMER
+                && this.securityDepositStatus != SecurityDepositStatus.TRANSFERRED_TO_OWNER)
+        {throw new IllegalStateException(
+                //TODO syn with error msg srs
+                    "Cannot complete rental contract " + getId()
+                            + " — security deposit not settled, current status: "
+                            + this.securityDepositStatus);
+    }
+    return super.complete();
+    }
 }

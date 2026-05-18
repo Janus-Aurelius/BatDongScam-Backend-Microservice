@@ -52,4 +52,21 @@ public class PurchaseContract extends Contract {
 
         return propertyValue.subtract(totalPaid);
     }
+
+    /**
+     * Overrides base complete. A purchase contract should only be completed
+     * when the remaining amount is zero (fully paid).
+     */
+    @Override
+    public ContractStatus complete()
+    {
+        if (getRemainingAmount().compareTo(BigDecimal.ZERO) > 0) {
+            //TODO: sync with msg srs
+            throw new IllegalArgumentException(
+                    "Cannot complete purchase contract " + getId()
+                            + " — remaining unpaid balance: " + getRemainingAmount());
+
+        }
+        return super.complete();
+    }
 }

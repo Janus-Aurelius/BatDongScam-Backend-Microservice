@@ -1,5 +1,6 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.core.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,5 +50,37 @@ public class DepositContract extends Contract {
 
     public boolean isLinkedToMainContract() {
         return (rentalContract != null) || (purchaseContract != null);
+    }
+
+    /**
+     * Overrides base cancel to auto-set cancellation penalty to the deposit amount
+     * if no explicit penalty was set.
+     */
+    @Override
+    public ContractStatus cancel (String reason, Role initiator)
+    {
+        ContractStatus old = super.cancel(reason,initiator);
+        if (getCancellationPenalty() == null)
+        {
+            setCancellationPenalty(this.depositAmount);
+        }
+        return old;
+    }
+
+
+    /**
+     * Overrides base complete. A deposit contract should only be completed
+     * when it has been linked to a main contract (rental or purchase).
+     */
+    @Override
+    public ContractStatus complete()
+    {
+        if (!isLinkedToMainContract())
+        {
+            throw new IllegalStateException(
+                    "Cannot complete deposit contract " + getId()
+                            + " — not yet linked to a rental or purchase contract");
+        }
+        return super.complete();
     }
 }
