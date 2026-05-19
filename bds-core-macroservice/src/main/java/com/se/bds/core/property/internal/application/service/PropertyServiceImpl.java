@@ -1,15 +1,20 @@
 package com.se.bds.core.property.internal.application.service;
 
-import com.se.bds.core.property.api.event.PropertyAgentAssignedEvent;
-import com.se.bds.core.property.api.event.PropertyStatusChangedEvent;
+import com.se.bds.core.property.api.event.*;
 import com.se.bds.core.property.internal.application.command.*;
+import com.se.bds.core.property.internal.application.command.pattern.CreatePropertyAction;
+import com.se.bds.core.property.internal.application.command.pattern.DeletePropertyAction;
+import com.se.bds.core.property.internal.application.command.pattern.UpdatePropertyAction;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
+import com.se.bds.core.property.internal.application.port.out.MessagePublisherPort;
 import com.se.bds.core.property.internal.domain.model.*;
+import com.se.bds.core.property.internal.domain.model.strategy.FeeCalculationStrategy;
 import com.se.bds.core.shared.ids.PropertyId;
 import com.se.bds.core.property.internal.application.port.out.PropertyRepository;
 import com.se.bds.core.property.internal.application.port.out.PropertyTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static java.lang.String.valueOf;
@@ -29,6 +35,10 @@ class PropertyServiceImpl implements PropertyUseCase {
     private final PropertyRepository propertyRepository;
     private final PropertyTypeRepository propertyTypeRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    private final MessagePublisherPort messagePublisherPort;
+
+    private final List<FeeCalculationStrategy> feeStrategies;
 
     @Override
     @Transactional
@@ -61,14 +71,32 @@ class PropertyServiceImpl implements PropertyUseCase {
 
         property.setFullAddress(command.address());
         property.setStatus(PropertyStatus.PENDING);
-        
-        property.setCommissionRate(java.math.BigDecimal.ZERO);
-        property.setServiceFeeAmount(java.math.BigDecimal.ZERO);
+
+        // Apply STRATEGY PATTERN
+        FeeCalculationStrategy feeStrategy = feeStrategies.stream()
+                .filter(s -> s.supports(property.getTransactionType()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chiến lược tính phí hợp lệ cho giao dịch này"));
+
+        property.setCommissionRate(feeStrategy.calculateCommissionRate());
+        property.setServiceFeeAmount(feeStrategy.calculateServiceFee(command.priceAmount(), command.area()));
         property.setServiceFeeCollectedAmount(java.math.BigDecimal.ZERO);
 
-        Property saved = propertyRepository.save(property);
+        // Apply COMMAND PATTERN
+        CreatePropertyAction createAction = new CreatePropertyAction(propertyRepository, property);
+        Property saved = createAction.execute();
 
         //TODO: Handle file uploads (ideally via an outbound port)
+
+        // Apply OBSERVER PATTERN
+        PropertyCreatedIntegrationEvent integrationEvent = new PropertyCreatedIntegrationEvent(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getOwnerId(),
+                saved.getTransactionType().name()
+        );
+        messagePublisherPort.publishPropertyCreated(integrationEvent);
+
         return saved;
     }
 
@@ -80,8 +108,17 @@ class PropertyServiceImpl implements PropertyUseCase {
      */
     @Override
     @Transactional
-    public Property updateProperty(UUID propertyId,UpdatePropertyCommand command, MultipartFile[] mediaFiles, MultipartFile[] documents) {
+    public Property updateProperty(
+            UUID propertyId,
+            UpdatePropertyCommand command,
+            MultipartFile[] mediaFiles,
+            MultipartFile[] documents
+    ) {
+
         Property property = getProperty(propertyId);
+
+        UpdatePropertyAction action = new UpdatePropertyAction(propertyRepository, property);
+
         property.setTitle(command.title());
         property.setDescription(command.description());
         property.setPriceAmount(command.priceAmount());
@@ -89,7 +126,11 @@ class PropertyServiceImpl implements PropertyUseCase {
         //force re-approval
         property.setStatus(PropertyStatus.PENDING);
 
-        return propertyRepository.save(property);
+        Property saved = action.execute();
+
+        messagePublisherPort.publishPropertyUpdated(new PropertyUpdatedIntegrationEvent(saved.getId()));
+
+        return saved;
     }
 
     /**
@@ -102,7 +143,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         Property property = getProperty(propertyId);
         PropertyStatus newStatus = PropertyStatus.valueOf(command.targetStatus());
         PropertyStatus oldStatus = property.transitionStatus(newStatus);
-        
+
         Property saved = propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
@@ -117,15 +158,19 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     @Transactional
     public void deleteProperty(UUID propertyId) {
+
         Property property = getProperty(propertyId);
 
-        PropertyStatus oldStatus = property.markAsDeleted();
-        propertyRepository.save(property);
+        PropertyStatus oldStatus = property.getStatus();
+
+        DeletePropertyAction action = new DeletePropertyAction(propertyRepository, property);
+        action.execute();
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
            new PropertyId(propertyId), oldStatus.name(),PropertyStatus.DELETED, Instant.now()
         ));
 
+        messagePublisherPort.publishPropertyDeleted(new PropertyDeletedIntegrationEvent(propertyId));
     }
 
     /**
@@ -164,6 +209,7 @@ class PropertyServiceImpl implements PropertyUseCase {
      * @return
      */
     @Override
+    @Cacheable(value = "propertyDetails", key = "#propertyId")
     public Property getPropertyDetail(UUID propertyId) {
         return getProperty(propertyId);
     }
@@ -194,11 +240,11 @@ class PropertyServiceImpl implements PropertyUseCase {
     public PropertyType updatePropertyType(UUID id, UpdatePropertyTypeCommand command) {
         PropertyType propertyType = propertyTypeRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
-        
+
         if (command.typeName() != null) propertyType.setTypeName(command.typeName());
         if (command.description() != null) propertyType.setDescription(command.description());
         if (command.isActive() != null) propertyType.setIsActive(command.isActive());
-        
+
         return propertyTypeRepository.save(propertyType);
     }
 
