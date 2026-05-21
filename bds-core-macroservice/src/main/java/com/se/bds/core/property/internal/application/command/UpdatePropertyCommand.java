@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record UpdatePropertyCommand (
         UUID ownerId,
-        UUID propertTypeId,
+        UUID propertyTypeId,
         UUID wardId,
         String title,
         String description,
@@ -21,7 +21,7 @@ public record UpdatePropertyCommand (
         String transactionType,
         String address,
         Double latitude,
-        Double longtitude,
+        Double longitude,
         List<UUID> mediaIdsToRemove,
         List<UUID> documentIdsToRemove
 ) {

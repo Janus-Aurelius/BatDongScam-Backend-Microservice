@@ -5,8 +5,8 @@ import com.se.bds.core.property.internal.application.port.in.PropertyMaintenance
 import com.se.bds.core.property.internal.application.port.out.PropertyRepository;
 import com.se.bds.core.property.internal.domain.model.Property;
 import com.se.bds.core.shared.ids.PropertyId;
-import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
-import com.se.bds.core.transaction.api.event.PaymentCompletedEvent;
+import com.se.bds.core.shared.event.ContractStatusChangedEvent;
+import com.se.bds.core.shared.event.PaymentCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

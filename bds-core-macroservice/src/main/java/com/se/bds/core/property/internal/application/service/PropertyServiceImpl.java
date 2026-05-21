@@ -46,7 +46,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     {
         Property property = new Property();
         property.setOwnerId(command.ownerId());
-        PropertyType propertyType = propertyTypeRepository.findById(command.propertTypeId())
+        PropertyType propertyType = propertyTypeRepository.findById(command.propertyTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
         property.setPropertyType(propertyType);
         property.setWardId(command.wardId());
@@ -147,7 +147,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         Property saved = propertyRepository.save(property);
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
-                new PropertyId(propertyId), oldStatus.name(), newStatus, Instant.now()
+                new PropertyId(propertyId), oldStatus.name(), newStatus.name(), Instant.now()
         ));
         return saved;
     }
@@ -167,7 +167,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         action.execute();
 
         eventPublisher.publishEvent(new PropertyStatusChangedEvent(
-           new PropertyId(propertyId), oldStatus.name(),PropertyStatus.DELETED, Instant.now()
+           new PropertyId(propertyId), oldStatus.name(), PropertyStatus.DELETED.name(), Instant.now()
         ));
 
         messagePublisherPort.publishPropertyDeleted(new PropertyDeletedIntegrationEvent(propertyId));

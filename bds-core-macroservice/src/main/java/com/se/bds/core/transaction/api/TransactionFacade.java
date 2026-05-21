@@ -21,4 +21,7 @@ public interface TransactionFacade {
 
     //replace paymentRepository.findRevenuePaymentsInMonth
     List<RevenuePaymentSnapshot> getRevenuePaymentsInMonth(int month, int year);
+
+    //agent reviews integration
+    com.se.bds.core.transaction.api.dto.AgentReviewSummary getAgentReviewSummary(UUID agentId);
 }

@@ -65,6 +65,13 @@ public class RentalContract extends Contract {
     @Column(name = "unpaid_months_count", nullable = false)
     private Integer unpaidMonthsCount = 0;
 
+    @Column(name = "pdf_url", length = 1000)
+    private String pdfUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pdf_status")
+    private PdfStatus pdfStatus;
+
     // ── Domain logic ───────────────────────────────────────────────────
     /**
      * Overrides base complete. A rental contract should only be completed

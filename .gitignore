@@ -52,3 +52,5 @@ logs/
 ### Runtime and Temp ###
 *.tmp
 *.temp
+
+.antigravitycli
