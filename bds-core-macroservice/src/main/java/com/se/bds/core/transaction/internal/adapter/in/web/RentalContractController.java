@@ -20,6 +20,14 @@ import java.util.UUID;
 public class RentalContractController {
     private final RentalContractUseCase rentalContractUseCase;
     private final TransactionWebMapper transactionWebMapper;
+    private final com.se.bds.core.transaction.internal.application.port.in.ContractPdfUseCase contractPdfUseCase;
+
+    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PostMapping("/{contractId}/generate-pdf")
+    public ResponseEntity<Void> generateContractPdf(@PathVariable UUID contractId) {
+        contractPdfUseCase.generateAndUploadContractPdf(contractId);
+        return ResponseEntity.accepted().build();
+    }
 
     @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
     @PostMapping

@@ -1,8 +1,8 @@
 package com.se.bds.core.property.internal.adapter.in.messaging;
 
 import com.se.bds.core.property.internal.application.port.in.PropertyMaintenanceUseCase;
-import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
-import com.se.bds.core.transaction.api.event.PaymentCompletedEvent;
+import com.se.bds.core.shared.event.ContractStatusChangedEvent;
+import com.se.bds.core.shared.event.PaymentCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

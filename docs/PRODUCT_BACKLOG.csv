@@ -7,13 +7,13 @@ AC2: Issue Access and Refresh tokens.
 AC3: Return user profile summary.",Token expiration < 2 hours.,P1,Product Owner,DONE,DONE,DONE
 US-003,Property,Management,Create Property Listing,"As an Owner, I want to list my property with details and images.","AC1: Validate required fields (title, price, area).
 AC2: Upload images to Cloudinary.
-AC3: Set initial status to PENDING_APPROVAL.",Image size < 5MB.,P1,Product Owner,DONE,DONE,DONE
+AC3: Set initial status to PENDING_APPROVAL.",Image size < 5MB.,P1,Nhat Minh Ha,DONE,DONE,DONE
 US-004,Property,Discovery,Search & Filter Properties,"As a Customer, I want to search for properties by location, price, and type.","AC1: Full-text search on titles/descriptions.
 AC2: Range filters for price and area.
-AC3: Sort by newest/cheapest.",Response time < 500ms.,P1,Product Owner,DONE,DONE,DONE
+AC3: Sort by newest/cheapest.",Response time < 500ms.,P1,Nhat Minh Ha,DONE,DONE,DONE
 US-005,Property,Discovery,Property Details View,"As a User, I want to see full details and media of a specific property.","AC1: Fetch details from PostgreSQL.
 AC2: Display interactive map location.
-AC3: Show contact info of the owner.",Highly available (99.9%).,P1,Product Owner,DONE,DONE,DONE
+AC3: Show contact info of the owner.",Highly available (99.9%).,P1,Nhat Minh Ha,DONE,DONE,DONE
 US-006,Appointment,Workflow,Request Appointment,"As a Customer, I want to book a viewing session for a property.","AC1: Select available date/time slots.
 AC2: Prevent double booking.
 AC3: Status set to PENDING.",Transactional consistency.,P2,Product Owner,DONE,DONE,DONE
@@ -21,15 +21,15 @@ US-007,Appointment,Workflow,Confirm/Reject Appointment,"As an Owner/Agent, I wan
 AC2: Trigger notification to Customer.",Notification latency < 5s.,P2,Product Owner,DONE,DONE,DONE
 US-008,Contract,Leasing,Draft Rental Contract,"As an Agent, I want to generate a rental contract draft from a template.","AC1: Auto-fill property and party details.
 AC2: Define lease duration and monthly rent.
-AC3: Upload PDF to Cloudinary.",Secure document storage.,P1,Product Owner,DONE,DONE,DONE
+AC3: Upload PDF to Cloudinary.",Secure document storage.,P1,Thien An Nguyen,DONE,DONE,DONE
 US-009,Contract,Sales,Deposit Contract Execution,"As a Customer, I want to sign a deposit contract to reserve a property.","AC1: Transition status to WAITING_OFFICIAL.
-AC2: Lock property status to prevents other appointments.",ACID compliance.,P1,Product Owner,DONE,DONE,DONE
+AC2: Lock property status to prevents other appointments.",ACID compliance.,P1,Thien An Nguyen,DONE,DONE,DONE
 US-010,Payment,Integration,Initialize Payment,"As a User, I want to pay for contracts or services using PayOS/Payway.","AC1: Generate payment link from provider.
 AC2: Record transaction as PENDING.
-AC3: Redirect user to gateway.",PCI-DSS compliance (via provider).,P1,Product Owner,DONE,DONE,DONE
+AC3: Redirect user to gateway.",PCI-DSS compliance (via provider).,P1,Thien An Nguyen,DONE,DONE,DONE
 US-011,Payment,Integration,Handle Payment Webhook,"As a System, I want to receive payment confirmations from external gateways.","AC1: Verify webhook signature.
 AC2: Update Transaction and Contract status to PAID/ACTIVE.
-AC3: Idempotent processing.",Strict security validation.,P1,Product Owner,DONE,DONE,DONE
+AC3: Idempotent processing.",Strict security validation.,P1,Thien An Nguyen,DONE,DONE,DONE
 US-012,Moderation,Governance,Report Violation,"As a User, I want to report suspicious listings or behavior.","AC1: Capture reason and description.
 AC2: Link to specific property or user profile.",Anonymous reporting support.,P3,Product Owner,DONE,DONE,DONE
 US-013,Moderation,Governance,Review Violations,"As an Admin, I want to review reports and take disciplinary actions.","AC1: Ban users or delete listings.
@@ -39,41 +39,41 @@ AC2: Send data payloads to mobile/web clients.",Reliable delivery.,P2,Product Ow
 US-015,Notification,Communication,Email Alerts,"As a User, I want to receive important documents and receipts via email.","AC1: Send PDF contracts as attachments.
 AC2: HTML template rendering.",SMTP reliability.,P3,Product Owner,DONE,DONE,DONE
 US-016,Analytics,Reporting,Generate Sales Report,"As an Admin, I want to see monthly revenue and transaction statistics.","AC1: Aggregate data from MongoDB/Postgres.
-AC2: Export to CSV/Excel.",Accuracy is critical.,P2,Product Owner,DONE,DONE,DONE
+AC2: Export to CSV/Excel.",Accuracy is critical.,P2,Thien An Nguyen,DONE,DONE,DONE
 US-017,User,Profile,Update Profile,"As a User, I want to manage my personal information and avatar.","AC1: Update name, phone, bio.
 AC2: Upload avatar to Cloudinary.",Data privacy.,P2,Product Owner,DONE,DONE,DONE
 US-018,Property,Ranking,Promote Property,"As an Owner, I want to pay to rank my property higher in search results.","AC1: Purchase 'Ranking' points.
-AC2: Apply ranking logic in search query.",Transparent billing.,P3,Product Owner,DONE,DONE,DONE
+AC2: Apply ranking logic in search query.",Transparent billing.,P3,Nhat Minh Ha,DONE,DONE,DONE
 US-019,Property,Management,Archive Property,"As an Owner, I want to de-list my property once sold or rented.","AC1: Soft delete from active search.
-AC2: Maintain history for analytics.",Data retention policy.,P2,Product Owner,DONE,DONE,DONE
+AC2: Maintain history for analytics.",Data retention policy.,P2,Nhat Minh Ha,DONE,DONE,DONE
 US-020,Assignment,Workflow,Assign Agent to Property,"As an Admin, I want to assign a Sales Agent to manage an Owner's property.","AC1: Track assignment history.
-AC2: Grant Agent permissions to edit listing.",Role-based access control.,P2,Product Owner,DONE,DONE,DONE
+AC2: Grant Agent permissions to edit listing.",Role-based access control.,P2,Nhat Minh Ha,DONE,DONE,DONE
 US-021,Location,Discovery,Fetch Province/District Data,"As a User, I want to select locations from a standardized hierarchical list.","AC1: Return list of Provinces.
-AC2: Filter Districts by Province.",Cachable response.,P2,Product Owner,DONE,DONE,DONE
+AC2: Filter Districts by Province.",Cachable response.,P2,Nhat Minh Ha,DONE,DONE,DONE
 US-022,Favorite,Discovery,Wishlist Property,"As a Customer, I want to save properties to my favorites for later review.","AC1: Toggle favorite status.
-AC2: List all saved properties.",Fast retrieval.,P3,Product Owner,DONE,DONE,DONE
+AC2: List all saved properties.",Fast retrieval.,P3,Nhat Minh Ha,DONE,DONE,DONE
 US-023,Security,Infrastructure,Token Refresh,"As a User, I want to stay logged in without re-entering credentials.","AC1: Use Refresh Token to get new Access Token.
 AC2: Rotate refresh tokens.",Secure token storage.,P1,Product Owner,DONE,DONE,DONE
 US-024,Messaging,Real-time Chat,Real-time Agent Chat,"As a Customer, I want to chat in real-time with an Agent about a property.","AC1: Socket.io connection establishment.
 AC2: Message persistence in MongoDB.
 AC3: Read receipts.","Low latency (<100ms).",P1,Product Owner,INPROGRESS,TODO,INPROGRESS
 US-025,AI/ML,Valuation,AI Property Valuation,"As an Owner, I want to see an estimated market value for my property based on historical data.","AC1: ML model integration.
-AC2: Prediction based on area, location, and features.","Model accuracy > 85%.",P2,Product Owner,TODO,TODO,TODO
+AC2: Prediction based on area, location, and features.","Model accuracy > 85%.",P2,Nhat Minh Ha,TODO,TODO,TODO
 US-026,Mobile,AR Tours,Augmented Reality Virtual Tour,"As a Customer, I want to view a property's layout in 3D AR using my smartphone.","AC1: Render 3D model overlay.
-AC2: Interactive hotspots for room details.","High frame rate (>60fps).",P3,Product Owner,TODO,TODO,TODO
+AC2: Interactive hotspots for room details.","High frame rate (>60fps).",P3,Nhat Minh Ha,TODO,TODO,TODO
 US-027,Search,Discovery,Map-based Search,"As a User, I want to search for properties by drawing a custom area on a map.","AC1: Geospatial query integration.
-AC2: Interactive cluster map markers.","Geospatial performance.",P2,Product Owner,INPROGRESS,INPROGRESS,TODO
+AC2: Interactive cluster map markers.","Geospatial performance.",P2,Nhat Minh Ha,INPROGRESS,INPROGRESS,TODO
 US-028,Finance,Escrow,Escrow Payment Protection,"As a Buyer, I want my funds to be held in escrow until the property title is verified.","AC1: Multi-stage payment hold.
-AC2: Release funds upon Admin/Legal approval.","High security/compliance.",P1,Product Owner,TODO,TODO,TODO
+AC2: Release funds upon Admin/Legal approval.","High security/compliance.",P1,Thien An Nguyen,TODO,TODO,TODO
 US-029,Marketing,Growth,Referral Program,"As a User, I want to invite friends using a referral link to earn platform rewards.","AC1: Generate unique referral codes.
 AC2: Track successful signups.
 AC3: Credit rewards/points to account.",Fraud prevention logic.,P3,Product Owner,TODO,TODO,TODO
 US-030,Governance,Trust,Agent Reviews,"As a Customer, I want to rate and review Sales Agents after a transaction.","AC1: Submit 1-5 star rating.
 AC2: Write text review.
-AC3: Average rating displayed on Agent profile.",Verified transactions only.,P2,Product Owner,TODO,TODO,TODO
+AC3: Average rating displayed on Agent profile.",Verified transactions only.,P2,Thien An Nguyen,TODO,TODO,TODO
 US-031,Analytics,Reporting,Owner Insights Dashboard,"As an Owner, I want to see how many people viewed or favorited my listings.","AC1: Real-time view count tracking.
 AC2: Weekly summary of interest.
-AC3: Conversion rate from view to appointment.",Data visualization (charts).,P2,Product Owner,INPROGRESS,TODO,TODO
+AC3: Conversion rate from view to appointment.",Data visualization (charts).,P2,Nhat Minh Ha,INPROGRESS,TODO,TODO
 US-032,AI/ML,Automation,Automated Document OCR,"As a User, I want my identity and land documents to be scanned automatically for faster verification.","AC1: Integrate OCR (e.g., Google Vision).
 AC2: Auto-fill registration forms from scan.
 AC3: Flag blurred or invalid images.",High accuracy (>90%).,P2,Product Owner,TODO,TODO,TODO

@@ -58,7 +58,7 @@ public class ContractMaintenanceService implements ContractMaintenanceUseCase {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handlePropertyStatusChanged(PropertyStatusChangedEvent event) {
-        String status = event.newStatus().name();
+        String status = event.newStatus();
         if ("DELETED".equals(status) || "REMOVED".equals(status)) {
             cancelContractsForProperty(
                 event.propertyId().value(), 

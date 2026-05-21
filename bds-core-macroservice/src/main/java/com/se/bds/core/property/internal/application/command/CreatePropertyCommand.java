@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record CreatePropertyCommand(
         UUID ownerId,
-        UUID propertTypeId,
+        UUID propertyTypeId,
         UUID wardId,
         String title,
         String description,
@@ -20,6 +20,6 @@ public record CreatePropertyCommand(
         String transactionType,
         String address,
         Double latitude,
-        Double longtitude
+        Double longitude
 ) {
 }

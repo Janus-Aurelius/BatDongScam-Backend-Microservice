@@ -43,13 +43,27 @@
         <stripe.version>32.2.0-beta.2</stripe.version>
         <jjwt.version>0.13.0</jjwt.version>
         <cloudinary.version>1.39.0</cloudinary.version>
-		<junit.version>5.11.0</junit.version>
 		<moneta.version>1.4.4</moneta.version>
+		<testcontainers.version>1.20.1</testcontainers.version>
+		<rest-assured.version>5.5.0</rest-assured.version>
+		<jacoco.version>0.8.12</jacoco.version>
 	</properties>
 
 	<!-- DEPENDENCY MANAGEMENT: Defines versions, DOES NOT automatically import them -->
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<groupId>io.rest-assured</groupId>
+				<artifactId>rest-assured</artifactId>
+				<version>${rest-assured.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-dependencies</artifactId>
@@ -65,14 +79,6 @@
 				<scope>import</scope>
 			</dependency>
 
-			<dependency>
-				<groupId>org.junit.jupiter</groupId>
-				<artifactId>junit-jupiter-api</artifactId>
-				<version>${junit.version}</version> <type>pom</type>
-			</dependency>
-
-
-			
 			<!-- Your Specific Third-Party Libraries -->
 			<dependency>
 				<groupId>com.google.firebase</groupId>
@@ -114,7 +120,6 @@
 				<artifactId>moneta</artifactId>
 				<version>${moneta.version}</version>
 				<type>pom</type>
-				<scope>compile</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -182,6 +187,34 @@
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<configuration>
+							<excludes>
+								<exclude>sun/util/resources/**</exclude>
+								<exclude>jdk/internal/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/reports/coverage</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

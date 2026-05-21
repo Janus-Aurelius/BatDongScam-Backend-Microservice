@@ -5,7 +5,7 @@ import com.se.bds.core.shared.enums.Role;
 import com.se.bds.core.shared.ids.ContractId;
 import com.se.bds.core.shared.dto.PropertySnapshot;
 import com.se.bds.core.shared.ids.PropertyId;
-import com.se.bds.core.transaction.api.event.ContractStatusChangedEvent;
+import com.se.bds.core.shared.event.ContractStatusChangedEvent;
 import com.se.bds.core.transaction.internal.application.command.CreatePurchaseContractCommand;
 import com.se.bds.core.transaction.internal.application.port.in.DepositContractUseCase;
 import com.se.bds.core.transaction.internal.application.port.in.PurchaseContractUseCase;

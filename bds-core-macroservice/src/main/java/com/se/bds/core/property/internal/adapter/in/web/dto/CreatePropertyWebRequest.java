@@ -24,6 +24,6 @@ public record CreatePropertyWebRequest(
         @NotBlank String transactionType,
         @NotBlank String address,
         Double latitude,
-        Double longtitude
+        Double longitude
         ) {
 }
