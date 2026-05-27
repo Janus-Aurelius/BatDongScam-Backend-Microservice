@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.core.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -150,10 +152,7 @@ public abstract class Contract {
     {
         if (isTerminal())
         {
-            throw new IllegalStateException(
-                    //TODO sync the error msg with srs
-                    "Cannot transition contract " + this.id + " from terminal status "
-                            + this.status + " to " + newStatus);
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         ContractStatus oldStatus = this.status;
         this.status = newStatus;
@@ -180,9 +179,7 @@ public abstract class Contract {
     {
         if (this.status != ContractStatus.ACTIVE)
         {
-            throw new IllegalStateException(
-                    "Can only complete an ACTIVE contract, current: " + this.status
-            );
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         ContractStatus old = this.status;
         this.status = ContractStatus.COMPLETED;
@@ -198,9 +195,7 @@ public abstract class Contract {
     {
         if (isTerminal())
         {
-            throw new IllegalStateException(
-                    "Cannot cancel contract " + this.id + " - already " + this.status
-            );
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         ContractStatus oldStatus = this.status;
         this.status = ContractStatus.CANCELLED;

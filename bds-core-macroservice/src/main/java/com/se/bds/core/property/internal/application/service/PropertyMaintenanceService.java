@@ -1,5 +1,7 @@
 package com.se.bds.core.property.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.property.api.event.PropertyServiceFeeCollectedEvent;
 import com.se.bds.core.property.internal.application.port.in.PropertyMaintenanceUseCase;
 import com.se.bds.core.property.internal.application.port.out.PropertyRepository;
@@ -30,7 +32,7 @@ public class PropertyMaintenanceService implements PropertyMaintenanceUseCase {
                 event.propertyId(), event.newStatus());
                 
         Property property = repository.findById(event.propertyId())
-                .orElseThrow(() -> new IllegalStateException("Property not found: " + event.propertyId()));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
 
         String type = event.contractType();
         String status = event.newStatus();
@@ -54,7 +56,7 @@ public class PropertyMaintenanceService implements PropertyMaintenanceUseCase {
         log.info("[PropertyMaintenanceService] Recording service fee payment for property {}", event.propertyId());
 
         Property property = repository.findById(event.propertyId())
-                .orElseThrow(() -> new IllegalStateException("Property not found: " + event.propertyId()));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
                 
         boolean fullyPaid = property.recordServiceFeePayment(event.amount());
         repository.save(property);

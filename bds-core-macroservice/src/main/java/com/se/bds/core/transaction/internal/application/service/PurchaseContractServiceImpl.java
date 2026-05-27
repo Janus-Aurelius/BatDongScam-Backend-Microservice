@@ -1,5 +1,9 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG13;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.property.api.PropertyFacade;
 import com.se.bds.core.shared.enums.Role;
 import com.se.bds.core.shared.ids.ContractId;
@@ -44,7 +48,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
 
         if (purchaseContractRepository.existsActiveContractForProperty(command.propertyId()))
         {
-            throw new IllegalArgumentException("Active contract already exists for this property");
+            throw new BusinessException(MSG12.CODE, "Active contract already exists for this property");
         }
         // 1. transition logic
         // check for deposit contract
@@ -52,23 +56,22 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         if (command.depositContractId()!=null)
         {
             deposit = depositContractRepository.findById(command.depositContractId())
-                    //TODO align error msg with SRS
-                    .orElseThrow(() -> new IllegalArgumentException("Deposit contract not found"));
+                    .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
             if (deposit.getStatus() != ContractStatus.ACTIVE)
             {
-                throw new IllegalStateException("Deposit contract is not ACTIVE, it must be ACTIVE");
+                throw new BusinessException(MSG12.CODE, "Deposit contract is not ACTIVE, it must be ACTIVE");
             }
             if (!Objects.equals(deposit.getPropertyId(),command.propertyId()))
             {
-                throw new IllegalArgumentException("Deposit contract does not match property id");
+                throw new BusinessException(MSG12.CODE, "Deposit contract does not match property id");
             }
             if (!Objects.equals(deposit.getCustomerId(),command.customerId()))
             {
-                throw new IllegalArgumentException("Deposit contract does not match customer id");
+                throw new BusinessException(MSG12.CODE, "Deposit contract does not match customer id");
             }
             if (deposit.getAgreedPrice().compareTo(command.agreedPrice()) != 0)
             {
-                throw new IllegalArgumentException("Agreed contract price does not match agreed price");
+                throw new BusinessException(MSG13.CODE, "Agreed contract price does not match agreed price");
             }
         }
         PurchaseContract contract = new PurchaseContract();
@@ -170,7 +173,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
 
     private PurchaseContract getContract(UUID contractId) {
         return purchaseContractRepository.findById(contractId)
-                .orElseThrow(() -> new IllegalArgumentException("Purchase contract not found"));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
     private void publishStatusEvent(PurchaseContract contract, ContractStatus oldStatus, ContractStatus newStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(new ContractId(contract.getId()),

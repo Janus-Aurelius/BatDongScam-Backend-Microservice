@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.transaction.internal.application.port.in.EscrowUseCase;
 import com.se.bds.core.transaction.internal.application.port.out.ContractRepository;
 import com.se.bds.core.transaction.internal.application.port.out.EscrowRepository;
@@ -31,7 +33,7 @@ public class EscrowService implements EscrowUseCase {
         log.info("[EVENT] Creating escrow hold for contractId={}, paymentId={}, amount={}", contractId, paymentId, amount);
 
         Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new IllegalArgumentException("Contract not found: " + contractId));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
 
         EscrowHold escrowHold = EscrowHold.builder()
                 .contractId(contractId)
@@ -186,6 +188,6 @@ public class EscrowService implements EscrowUseCase {
 
     private EscrowHold getHold(UUID escrowId) {
         return escrowRepository.findById(escrowId)
-                .orElseThrow(() -> new IllegalArgumentException("Escrow hold not found: " + escrowId));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
 }

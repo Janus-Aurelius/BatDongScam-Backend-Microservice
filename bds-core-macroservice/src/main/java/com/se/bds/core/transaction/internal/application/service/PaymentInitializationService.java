@@ -1,5 +1,8 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.transaction.internal.application.port.in.PaymentInitializationUseCase;
 import com.se.bds.core.transaction.internal.application.port.out.PaymentGatewayPort;
 import com.se.bds.core.transaction.internal.application.port.out.PaymentRepository;
@@ -28,10 +31,10 @@ public class PaymentInitializationService implements PaymentInitializationUseCas
         log.info("[EVENT] Initializing payment session: contractId={}, paymentId={}", contractId, paymentId);
 
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + paymentId));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
 
         if (!payment.getContract().getId().equals(contractId)) {
-            throw new IllegalArgumentException("Payment does not belong to contract: " + contractId);
+            throw new BusinessException(MSG12.CODE, "Payment does not belong to contract: " + contractId);
         }
 
         // Prepare metadata for gateway mapping
