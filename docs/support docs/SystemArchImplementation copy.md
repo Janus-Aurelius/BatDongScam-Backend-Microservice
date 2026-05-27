@@ -8,7 +8,7 @@ This report covers **7 user stories** assigned to Thien An Nguyen for the `bds-c
 
 | ID | Feature | Expected State | Actual Verified State | Status Notes |
 |:---|:---|:---|:---|:---|
-| **US-008** | Draft Rental Contract (PDF + Cloudinary) | Partially Implemented — missing AC3 | **Partially Implemented** | PDF generation is fully in-memory and Cloudinary uploads exist, but the background scheduler degradation path is **Not Implemented** (degraded status updates are fully complete). |
+| **US-008** | Draft Rental Contract (PDF + Cloudinary) | Partially Implemented — missing AC3 | **✅ Fully Implemented** | PDF generation is fully in-memory and Cloudinary uploads exist. Background scheduler degradation path to retry failed uploads is **Fully Implemented**. |
 | **US-009** | Deposit Contract Execution | ✅ Fully Implemented | **✅ Fully Implemented** | Bounded context transition methods and domain-level pre-condition transition sanity checking are completely implemented. |
 | **US-010** | Initialize Payment | 🔴 Not Started | **✅ Fully Implemented** | Payment initialization, REST controllers, and lightweight REST HTTP Ping/Echo health check validation are completely implemented. |
 | **US-011** | Handle Payment Webhook | Partially Implemented | **✅ Fully Implemented** | Webhook controller, timing-attack-resistant HMAC verification, processing logic, and security filter bypass configurations are completely implemented. |
@@ -55,9 +55,11 @@ This report covers **7 user stories** assigned to Thien An Nguyen for the `bds-c
 ### Feature Level
 
 *   **Tactic: Degradation (Recover from Faults) — US-008**
-    - ⚠️ **Status: PARTIALLY IMPLEMENTED**
-    - **Verified Code Location:** [ContractPdfService.java:L69-75](file:///home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice/bds-core-macroservice/src/main/java/com/se/bds/core/transaction/internal/application/service/ContractPdfService.java#L69-L75)
-    - **Verification Details:** The try-catch block catches PDF upload failure and marks `pdfStatus` as `FAILED`. However, the background scheduled task to retry failed uploads is **Not Implemented** (no `@Scheduled` classes exist in the codebase).
+    - ✅ **Status: IMPLEMENTED**
+    - **Verified Code Locations:**
+        - [ContractPdfService.java](file:///home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice/bds-core-macroservice/src/main/java/com/se/bds/core/transaction/internal/application/service/ContractPdfService.java) (Catches upload failure and updates status)
+        - [PdfRetryScheduler.java](file:///home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice/bds-core-macroservice/src/main/java/com/se/bds/core/transaction/internal/application/service/PdfRetryScheduler.java) (Scheduled task retries failed uploads)
+    - **Verification Details:** The try-catch block catches PDF upload failure and correctly degrades the state to `PENDING_UPLOAD`. A scheduled background job (`PdfRetryScheduler`) queries for these states and re-attempts the upload, fully satisfying the degradation requirement.
 
 *   **Tactic: Sanity Checking (Detect Faults) — US-009**
     - ✅ **Status: IMPLEMENTED**
