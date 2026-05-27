@@ -56,7 +56,7 @@ public class PropertyController {
 
     // TODO check the business context of this action
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
-    @PutMapping (value = "/properties/{properyId}/status")
+    @PutMapping (value = "/properties/{propertyId}/status")
     public ResponseEntity<Property> updatePropertyStatus(
             @PathVariable UUID propertyId,
             @Valid @RequestBody UpdatePropertyStatusWebRequest request

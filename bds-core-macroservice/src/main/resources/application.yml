@@ -6,6 +6,9 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
+  sql:
+    init:
+      mode: always
   jpa:
     hibernate:
       ddl-auto: update
