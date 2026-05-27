@@ -1,5 +1,8 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG13;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -120,7 +123,7 @@ public class EscrowHold {
      */
     public void confirmHold() {
         if (this.status != EscrowStatus.PENDING) {
-            throw new IllegalStateException("Can only confirm hold from PENDING status, current: " + this.status);
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         this.status = EscrowStatus.HELD;
     }
@@ -155,7 +158,7 @@ public class EscrowHold {
     public void partialRelease(BigDecimal deduction, UUID adminUserId, String reason) {
         validateHeld();
         if (deduction.compareTo(this.holdAmount) > 0) {
-            throw new IllegalArgumentException("Deduction amount cannot exceed hold amount");
+            throw new BusinessException(MSG13.CODE, MSG13.MESSAGE);
         }
         this.deductedAmount = deduction;
         this.releasedAmount = this.holdAmount.subtract(deduction);
@@ -179,7 +182,7 @@ public class EscrowHold {
 
     private void validateHeld() {
         if (this.status != EscrowStatus.HELD) {
-            throw new IllegalStateException("Escrow must be in HELD status for this operation, current: " + this.status);
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
     }
 }

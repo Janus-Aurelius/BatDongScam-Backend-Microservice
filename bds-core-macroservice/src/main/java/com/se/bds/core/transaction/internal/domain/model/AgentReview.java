@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG13;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -71,7 +73,7 @@ public class AgentReview {
      */
     public void validateRating() {
         if (this.rating == null || this.rating < 1 || this.rating > 5) {
-            throw new IllegalArgumentException("Rating must be between 1 and 5, got: " + this.rating);
+            throw new BusinessException(MSG13.CODE, MSG13.MESSAGE);
         }
     }
 }

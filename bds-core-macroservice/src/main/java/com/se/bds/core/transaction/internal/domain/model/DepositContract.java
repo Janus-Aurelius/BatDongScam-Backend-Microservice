@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.core.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -77,9 +79,7 @@ public class DepositContract extends Contract {
     {
         if (!isLinkedToMainContract())
         {
-            throw new IllegalStateException(
-                    "Cannot complete deposit contract " + getId()
-                            + " — not yet linked to a rental or purchase contract");
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         return super.complete();
     }

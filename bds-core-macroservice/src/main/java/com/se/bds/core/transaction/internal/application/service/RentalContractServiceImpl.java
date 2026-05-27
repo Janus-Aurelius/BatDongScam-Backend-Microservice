@@ -1,5 +1,9 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG13;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.property.api.PropertyFacade;
 import com.se.bds.core.shared.dto.PropertySnapshot;
 import com.se.bds.core.shared.enums.Role;
@@ -46,23 +50,23 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
         DepositContract deposit = null;
         if (command.depositContractId() != null) {
             deposit = depositContractRepository.findById(command.depositContractId())
-                    .orElseThrow (() -> new IllegalArgumentException("Deposit contract not found"));
+                    .orElseThrow (() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
             if (deposit.getStatus() != ContractStatus.ACTIVE)
             {
-                throw new IllegalStateException("Deposit contract not active");
+                throw new BusinessException(MSG12.CODE, "Deposit contract not active");
             }
             if (!deposit.getPropertyId().equals(command.propertyId()))
             {
-                throw new IllegalArgumentException("Deposit contract property not match with property id");
+                throw new BusinessException(MSG12.CODE, "Deposit contract property not match with property id");
             }
             if (!deposit.getCustomerId().equals(command.customerId()))
             {
-                throw new IllegalArgumentException("Deposit contract customer not match with customer id");
+                throw new BusinessException(MSG12.CODE, "Deposit contract customer not match with customer id");
             }
             //TODO checking if this logic is corect
             if (deposit.getAgreedPrice().compareTo(command.monthlyRentAmount()) != 0)
             {
-                throw new IllegalArgumentException("Monthly rent amount must match the deposit contract's agreed price");
+                throw new BusinessException(MSG13.CODE, "Monthly rent amount must match the deposit contract's agreed price");
             }
         }
 
@@ -181,8 +185,7 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
 
     private RentalContract getContract(UUID contractId) {
         return rentalContractRepository.findById(contractId)
-                //TODO align with error msg SRS
-                .orElseThrow(()-> new IllegalArgumentException("Rental contract not found"));
+                .orElseThrow(()-> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
 
     private RentalContract transitionStatus(UUID contractId, ContractStatus newStatus) {

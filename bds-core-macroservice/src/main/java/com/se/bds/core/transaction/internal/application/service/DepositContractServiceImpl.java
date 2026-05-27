@@ -1,5 +1,8 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.property.api.PropertyFacade;
 import com.se.bds.core.shared.enums.Role;
 import com.se.bds.core.shared.ids.ContractId;
@@ -36,8 +39,7 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
         propertyFacade.validatePropertyAvailableForContract(new PropertyId(createDepositContractCommand.propertyId()), ContractType.DEPOSIT.name());
         if (depositContractRepository.existsActiveContractForProperty(createDepositContractCommand.propertyId()))
         {
-            //TODO: wire error message with SRS
-            throw new IllegalArgumentException("Active contract already exist for this property");
+            throw new BusinessException(MSG12.CODE, "Active contract already exist for this property");
         }
         DepositContract contract = new DepositContract();
         contract.setPropertyId(createDepositContractCommand.propertyId());
@@ -136,7 +138,6 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
 
     private DepositContract getContract(UUID contractId) {
         return depositContractRepository.findById(contractId)
-        .orElseThrow(() -> new IllegalArgumentException("Deposit contract with id " + contractId + " does not exist"));
+        .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
-
 }

@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -84,12 +86,9 @@ public class RentalContract extends Contract {
                 && this.securityDepositStatus != null
                 && this.securityDepositStatus != SecurityDepositStatus.RETURNED_TO_CUSTOMER
                 && this.securityDepositStatus != SecurityDepositStatus.TRANSFERRED_TO_OWNER)
-        {throw new IllegalStateException(
-                //TODO syn with error msg srs
-                    "Cannot complete rental contract " + getId()
-                            + " — security deposit not settled, current status: "
-                            + this.securityDepositStatus);
-    }
-    return super.complete();
+        {
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
+        }
+        return super.complete();
     }
 }
