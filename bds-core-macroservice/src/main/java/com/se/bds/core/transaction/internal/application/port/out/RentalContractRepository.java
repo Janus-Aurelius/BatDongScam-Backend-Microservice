@@ -12,4 +12,6 @@ public interface RentalContractRepository {
     boolean existsActiveContractForProperty(UUID propertyId);
     void delete(RentalContract rentalContract);
     List<RentalContract> findActiveByPropertyId(UUID propertyId);
+    List<RentalContract> findByPdfStatus(com.se.bds.core.transaction.internal.domain.model.PdfStatus pdfStatus);
+    List<RentalContract> findByPdfUrl(String pdfUrl);
 }

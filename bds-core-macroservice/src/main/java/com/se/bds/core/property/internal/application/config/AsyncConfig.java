@@ -9,6 +9,8 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
+@org.springframework.retry.annotation.EnableRetry
+@org.springframework.scheduling.annotation.EnableScheduling
 public class AsyncConfig {
 
     @Bean(name = "bdsTaskExecutor")

@@ -69,8 +69,9 @@ public class ContractPdfService implements ContractPdfUseCase {
         } catch (Exception e) {
             log.error("[EVENT] Contract PDF generation or upload FAILED: contractId={}, error={}", contractId, e.getMessage(), e);
 
-            // Degradation Tactic: mark status as FAILED so fallback background scheduler can retry
-            contract.setPdfStatus(PdfStatus.FAILED);
+            // Degradation Tactic: still complete the rental contract draft but mark pdfUrl as PENDING_UPLOAD with pdfStatus: PENDING
+            contract.setPdfUrl("PENDING_UPLOAD");
+            contract.setPdfStatus(PdfStatus.PENDING);
             rentalContractRepository.save(contract);
         }
     }

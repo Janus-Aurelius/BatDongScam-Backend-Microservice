@@ -27,11 +27,36 @@ public class ReportExportService implements ReportExportUseCase {
 
     private final ContractRepository contractRepository;
     private final FileStoragePort fileStoragePort;
+    private final java.util.concurrent.ConcurrentHashMap<String, java.util.List<java.time.Instant>> rateLimitMap = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
     public String exportSalesReport(LocalDate startDate, LocalDate endDate, String format) {
-        log.info("[ACCOUNTS] Admin initiated ASYNC report export: type=SALES, format={}, dateRange={} to {}", 
-                format, startDate, endDate);
+        String adminUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                ? org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName()
+                : "Anonymous";
+
+        log.info("[ACCOUNTS] Admin={} initiated ASYNC report export: type=SALES, format={}, dateRange={} to {}", 
+                adminUsername, format, startDate, endDate);
+
+        // In-memory rate limiting: max 5 requests per admin per hour
+        java.time.Instant now = java.time.Instant.now();
+        java.time.Instant oneHourAgo = now.minus(java.time.Duration.ofHours(1));
+
+        java.util.List<java.time.Instant> timestamps = rateLimitMap.compute(adminUsername, (k, v) -> {
+            if (v == null) {
+                v = new java.util.concurrent.CopyOnWriteArrayList<>();
+            }
+            v.removeIf(t -> t.isBefore(oneHourAgo));
+            return v;
+        });
+
+        if (timestamps.size() >= 5) {
+            log.warn("[SECURITY] Rate limit exceeded for admin={} on report export", adminUsername);
+            throw new com.se.bds.common.exception.BusinessException(com.se.bds.common.message.validation.MSG12.CODE, 
+                    "Rate limit exceeded. You can only export a maximum of 5 reports per hour.");
+        }
+
+        timestamps.add(now);
 
         // In a real implementation, we would return a Job ID or Trackable URL here.
         // For the purpose of this performance benchmark, we schedule the heavy work 

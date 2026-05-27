@@ -17,4 +17,8 @@ public interface JpaRentalContractRepository extends JpaRepository<RentalContrac
     @Query("SELECT c FROM RentalContract c WHERE c.propertyId = :propertyId "
             + "AND c.status NOT IN ('COMPLETED', 'CANCELLED')")
     List<RentalContract> findActiveByPropertyId(@Param("propertyId") UUID propertyId);
+
+    List<RentalContract> findByPdfStatus(com.se.bds.core.transaction.internal.domain.model.PdfStatus pdfStatus);
+
+    List<RentalContract> findByPdfUrl(String pdfUrl);
 }
