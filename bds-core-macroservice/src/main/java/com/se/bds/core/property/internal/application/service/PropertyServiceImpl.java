@@ -1,5 +1,11 @@
 package com.se.bds.core.property.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.discovery.MSG32;
+import com.se.bds.common.message.validation.MSG11;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG18;
+import com.se.bds.common.message.validation.MSG2;
 import com.se.bds.core.property.api.event.*;
 import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.command.pattern.CreatePropertyAction;
@@ -44,10 +50,19 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Transactional
     public Property createProperty(CreatePropertyCommand command, MultipartFile[] mediaFiles, MultipartFile[] documents)
     {
+        // BR19: Validate file sizes
+        if (mediaFiles != null) {
+            for (MultipartFile file : mediaFiles) {
+                if (file.getSize() > 5 * 1024 * 1024) { // 5MB
+                    throw new BusinessException(MSG11.CODE, MSG11.MESSAGE);
+                }
+            }
+        }
+
         Property property = new Property();
         property.setOwnerId(command.ownerId());
         PropertyType propertyType = propertyTypeRepository.findById(command.propertyTypeId())
-                .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
         property.setPropertyType(propertyType);
         property.setWardId(command.wardId());
         property.setTitle(command.title());
@@ -76,7 +91,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         FeeCalculationStrategy feeStrategy = feeStrategies.stream()
                 .filter(s -> s.supports(property.getTransactionType()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chiến lược tính phí hợp lệ cho giao dịch này"));
+                .orElseThrow(() -> new BusinessException(MSG12.CODE, "No valid fee strategy found for this transaction"));
 
         property.setCommissionRate(feeStrategy.calculateCommissionRate());
         property.setServiceFeeAmount(feeStrategy.calculateServiceFee(command.priceAmount(), command.area()));
@@ -239,7 +254,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     public PropertyType updatePropertyType(UUID id, UpdatePropertyTypeCommand command) {
         PropertyType propertyType = propertyTypeRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+            .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
 
         if (command.typeName() != null) propertyType.setTypeName(command.typeName());
         if (command.description() != null) propertyType.setDescription(command.description());
@@ -251,7 +266,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     public void deletePropertyType(UUID id) {
         PropertyType propertyType = propertyTypeRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+            .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
         propertyTypeRepository.delete(propertyType);
     }
 
@@ -264,7 +279,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     public String getPropertyTypeName(UUID propertyTypeId) {
         return propertyTypeRepository.findById(propertyTypeId)
             .map(PropertyType::getTypeName)
-            .orElseThrow(() -> new IllegalArgumentException("Property type not found"));
+            .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
 
     @Override
@@ -275,8 +290,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     private Property getProperty(UUID propertyId)
     {
         return propertyRepository.findById(propertyId)
-                //TODO: align error message with msg in SRS
-                .orElseThrow(() -> new IllegalArgumentException("Property not found"));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
     }
 
 }

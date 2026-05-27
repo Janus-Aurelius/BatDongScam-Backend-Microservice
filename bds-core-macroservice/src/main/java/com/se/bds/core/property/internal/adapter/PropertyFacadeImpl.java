@@ -1,5 +1,7 @@
 package com.se.bds.core.property.internal.adapter;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.core.property.api.PropertyFacade;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
 import com.se.bds.core.property.internal.domain.model.Property;
@@ -34,7 +36,7 @@ public class PropertyFacadeImpl implements PropertyFacade {
     public void validatePropertyAvailableForContract(PropertyId propertyId, String contractType) {
         Property property = propertyUseCase.getPropertyDetail(propertyId.value());
         if (property.getStatus() != PropertyStatus.AVAILABLE && property.getStatus() != PropertyStatus.PENDING) {
-             throw new IllegalStateException("Property is not available for contract");
+             throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         // Additional validation based on contractType can be added here
     }

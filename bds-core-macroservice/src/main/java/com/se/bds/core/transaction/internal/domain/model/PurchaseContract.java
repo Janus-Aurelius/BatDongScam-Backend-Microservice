@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -61,10 +63,7 @@ public class PurchaseContract extends Contract {
     public ContractStatus complete()
     {
         if (getRemainingAmount().compareTo(BigDecimal.ZERO) > 0) {
-            //TODO: sync with msg srs
-            throw new IllegalArgumentException(
-                    "Cannot complete purchase contract " + getId()
-                            + " — remaining unpaid balance: " + getRemainingAmount());
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
 
         }
         return super.complete();

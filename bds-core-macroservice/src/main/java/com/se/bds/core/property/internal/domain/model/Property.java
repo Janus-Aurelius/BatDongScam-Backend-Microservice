@@ -1,5 +1,8 @@
 package com.se.bds.core.property.internal.domain.model;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG13;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -163,15 +166,13 @@ public class Property {
     /**
      * Validates that a status transition is allowed and applies it.
      * @return the old status (for event publishing)
-     * @throws IllegalStateException if the transition is invalid
+     * @throws BusinessException if the transition is invalid
      */
 
     public PropertyStatus transitionStatus(PropertyStatus newStatus) {
         if (TERMINAL_STATUSES.contains(this.status) && newStatus != PropertyStatus.AVAILABLE)
         {
-            //TODO: sync with error msg in SRS
-            throw new IllegalStateException(
-                    "Cannot transition from terminal status " + this.status + " to " + newStatus);
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         PropertyStatus oldStatus = this.status;
         this.status = newStatus;
@@ -206,9 +207,7 @@ public class Property {
     {
         if (this.status != PropertyStatus.RENTED)
         {
-            throw new IllegalStateException(
-                    "Cannot transition from status " + this.status + " to " + PropertyStatus.AVAILABLE
-            );
+            throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
         return transitionStatus(PropertyStatus.AVAILABLE);
     }
@@ -245,7 +244,7 @@ public class Property {
     {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new IllegalArgumentException("Payment amount must be greater than zero");
+            throw new BusinessException(MSG13.CODE, MSG13.MESSAGE);
         }
         this.serviceFeeCollectedAmount = this.serviceFeeCollectedAmount.add(amount);
         return isSeviceFullyPaid();

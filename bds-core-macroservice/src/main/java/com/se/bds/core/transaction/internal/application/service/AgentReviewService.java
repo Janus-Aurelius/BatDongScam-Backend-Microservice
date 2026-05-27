@@ -1,5 +1,9 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.message.discovery.MSG39;
+import com.se.bds.common.message.validation.MSG12;
+import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.core.transaction.internal.application.port.in.AgentReviewUseCase;
 import com.se.bds.core.transaction.internal.application.port.out.AgentReviewRepository;
 import com.se.bds.core.transaction.internal.application.port.out.ContractRepository;
@@ -28,26 +32,26 @@ public class AgentReviewService implements AgentReviewUseCase {
         log.info("[ACCOUNTS] Customer={} submitting review for agent={} on contractId={}", customerId, agentId, contractId);
 
         Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new IllegalArgumentException("Contract not found: " + contractId));
+                .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
 
         // Security check: Only the customer who signed the contract can review
         if (!contract.getCustomerId().equals(customerId)) {
-            throw new IllegalArgumentException("Only the contract customer can submit a review");
+            throw new BusinessException(MSG12.CODE, "Only the contract customer can submit a review");
         }
 
         // Integrity check: Agent must match the contract agent
         if (contract.getAgentId() == null || !contract.getAgentId().equals(agentId)) {
-            throw new IllegalArgumentException("The specified agent does not match the contract agent");
+            throw new BusinessException(MSG12.CODE, "The specified agent does not match the contract agent");
         }
 
         // Status check: Contract must be ACTIVE or COMPLETED
         if (contract.getStatus() != ContractStatus.ACTIVE && contract.getStatus() != ContractStatus.COMPLETED) {
-            throw new IllegalStateException("Can only review agents for ACTIVE or COMPLETED contracts");
+            throw new BusinessException(MSG39.CODE, MSG39.MESSAGE);
         }
 
         // Idempotency: One review per contract
         if (agentReviewRepository.existsByContractId(contractId)) {
-            throw new IllegalArgumentException("A review has already been submitted for this contract");
+            throw new BusinessException(MSG12.CODE, "A review has already been submitted for this contract");
         }
 
         AgentReview review = AgentReview.builder()
