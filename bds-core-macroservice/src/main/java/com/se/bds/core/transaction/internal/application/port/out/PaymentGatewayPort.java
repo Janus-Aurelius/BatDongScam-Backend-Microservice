@@ -60,6 +60,13 @@ public interface PaymentGatewayPort {
     );
 
     /**
+     * Checks if the payment gateway is healthy (Ping/Echo tactic).
+     *
+     * @return true if the gateway is responsive, false otherwise
+     */
+    boolean isHealthy();
+
+    /**
      * Result of creating a payment session.
      */
     record PaymentSessionResult(

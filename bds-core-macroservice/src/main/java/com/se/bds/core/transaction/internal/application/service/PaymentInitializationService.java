@@ -37,6 +37,12 @@ public class PaymentInitializationService implements PaymentInitializationUseCas
             throw new BusinessException(MSG12.CODE, "Payment does not belong to contract: " + contractId);
         }
 
+        // Perform lightweight Ping/Echo health check before contacting the gateway
+        if (!paymentGatewayPort.isHealthy()) {
+            log.error("[EVENT] Payment session creation FAILED: Payway gateway is DOWN");
+            throw new BusinessException(MSG12.CODE, "Payment Gateway is currently unavailable. Please try again later.");
+        }
+
         // Prepare metadata for gateway mapping
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("contractId", contractId.toString());

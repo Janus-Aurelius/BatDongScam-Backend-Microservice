@@ -35,7 +35,7 @@ public class DepositContractController {
         return ResponseEntity.ok(depositContractUseCase.approveDepositContract(contractId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
     @PostMapping("/{contractId}/paperwork-complete")
     public ResponseEntity<DepositContract> markPaperworkComplete(@PathVariable UUID contractId)
     {
@@ -50,14 +50,14 @@ public class DepositContractController {
         return ResponseEntity.ok(depositContractUseCase.cancelDepositContract(contractId, cancelDepositContractWebRequest.reason()));
     }
 
-    @PreAuthorize("hashAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{contractId}/void")
     public ResponseEntity<DepositContract> voidDepositContract(@PathVariable UUID contractId)
     {
         return ResponseEntity.ok(depositContractUseCase.voidDepositContract(contractId));
     }
 
-    @PreAuthorize("hasAnyROle('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{contractId}")
     public ResponseEntity<Void> deleteDepositContract(@PathVariable UUID contractId)
     {

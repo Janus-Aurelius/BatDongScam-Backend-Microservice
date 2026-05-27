@@ -154,9 +154,60 @@ public abstract class Contract {
         {
             throw new BusinessException(MSG12.CODE, MSG12.MESSAGE);
         }
+
+        validateTransition(this.status, newStatus);
+
         ContractStatus oldStatus = this.status;
         this.status = newStatus;
         return oldStatus;
+    }
+
+    private void validateTransition(ContractStatus oldStatus, ContractStatus newStatus) {
+        if (oldStatus == ContractStatus.DRAFT && newStatus == ContractStatus.WAITING_OFFICIAL) {
+            if (this.propertyId == null) {
+                throw new BusinessException(MSG12.CODE, "Property ID must not be null");
+            }
+            if (this.customerId == null) {
+                throw new BusinessException(MSG12.CODE, "Customer ID must not be null");
+            }
+            if (this instanceof RentalContract) {
+                RentalContract rental = (RentalContract) this;
+                if (rental.getMonthlyRentAmount() == null || rental.getMonthlyRentAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessException(MSG12.CODE, "Monthly rent amount must be populated and positive");
+                }
+            } else if (this instanceof DepositContract) {
+                DepositContract deposit = (DepositContract) this;
+                if (deposit.getDepositAmount() == null || deposit.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessException(MSG12.CODE, "Deposit amount must be populated and positive");
+                }
+            } else if (this instanceof PurchaseContract) {
+                PurchaseContract purchase = (PurchaseContract) this;
+                if (purchase.getPropertyValue() == null || purchase.getPropertyValue().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessException(MSG12.CODE, "Property value must be populated and positive");
+                }
+            }
+        }
+
+        if (oldStatus == ContractStatus.WAITING_OFFICIAL && newStatus == ContractStatus.PENDING_PAYMENT) {
+            if (this.contractNumber == null || this.contractNumber.trim().isEmpty()) {
+                throw new BusinessException(MSG12.CODE, "Signed paperwork must exist before moving to PENDING_PAYMENT");
+            }
+        }
+
+        if (oldStatus == ContractStatus.PENDING_PAYMENT && newStatus == ContractStatus.ACTIVE) {
+            boolean hasSuccessPayment = false;
+            if (this.payments != null) {
+                for (Payment p : this.payments) {
+                    if (p.getStatus() == PaymentStatus.SUCCESS) {
+                        hasSuccessPayment = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasSuccessPayment) {
+                throw new BusinessException(MSG12.CODE, "At least first payment must be marked SUCCESS to activate the contract");
+            }
+        }
     }
 
     /**

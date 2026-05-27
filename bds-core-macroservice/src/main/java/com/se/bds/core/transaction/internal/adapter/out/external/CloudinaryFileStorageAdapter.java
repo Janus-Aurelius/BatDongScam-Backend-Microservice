@@ -36,6 +36,11 @@ public class CloudinaryFileStorageAdapter implements FileStoragePort {
     }
 
     @Override
+    @org.springframework.retry.annotation.Retryable(
+            retryFor = { Exception.class },
+            maxAttempts = 3,
+            backoff = @org.springframework.retry.annotation.Backoff(delay = 500, multiplier = 2.0)
+    )
     public String uploadFile(byte[] fileBytes, String folder, String fileName) {
         log.info("[EVENT] Uploading file to Cloudinary: folder={}, fileName={}", folder, fileName);
         if (cloudinary == null) {

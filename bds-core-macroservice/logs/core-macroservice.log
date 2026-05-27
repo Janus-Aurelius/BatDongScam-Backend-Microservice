@@ -1,0 +1,43 @@
+2026-05-27 17:09:56.618 [main] [traceId=none] INFO  c.s.b.c.CoreMacroserviceApplication - Starting CoreMacroserviceApplication using Java 25.0.2 with PID 3714 (/home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice/bds-core-macroservice/target/classes started by annguyen in /home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice/bds-core-macroservice)
+2026-05-27 17:09:56.620 [main] [traceId=none] INFO  c.s.b.c.CoreMacroserviceApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-27 17:09:56.766 [background-preinit] [traceId=none] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 9.0.1.Final
+2026-05-27 17:09:57.481 [main] [traceId=none] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-27 17:09:57.566 [main] [traceId=none] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 76 ms. Found 10 JPA repository interfaces.
+2026-05-27 17:09:58.228 [main] [traceId=none] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-27 17:09:58.241 [main] [traceId=none] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-05-27 17:09:58.245 [main] [traceId=none] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-27 17:09:58.246 [main] [traceId=none] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-05-27 17:09:58.292 [main] [traceId=none] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 1625 ms
+2026-05-27 17:09:58.419 [main] [traceId=none] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-05-27 17:09:59.577 [main] [traceId=none] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@634aa81e
+2026-05-27 17:09:59.578 [main] [traceId=none] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-05-27 17:10:00.015 [main] [traceId=none] INFO  org.hibernate.orm.jpa - HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-05-27 17:10:00.058 [main] [traceId=none] INFO  org.hibernate.orm.core - HHH000001: Hibernate ORM core version 7.2.12.Final
+2026-05-27 17:10:00.431 [main] [traceId=none] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-05-27 17:10:00.712 [main] [traceId=none] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [jdbc:postgresql://ep-fancy-shape-aoi6xzmx-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require]
+	Database driver: PostgreSQL JDBC Driver
+	Database dialect: PostgreSQLDialect
+	Database version: 17.10
+	Default catalog/schema: neondb/public
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-05-27 17:10:01.951 [main] [traceId=none] INFO  org.hibernate.orm.core - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-05-27 17:10:02.367 [main] [traceId=none] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-27 17:10:02.571 [main] [traceId=none] INFO  o.s.d.j.r.q.QueryEnhancerFactories - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-05-27 17:10:04.035 [main] [traceId=none] WARN  c.s.b.c.t.i.a.o.e.CloudinaryFileStorageAdapter - Cloudinary configuration missing! Using fallback/mock implementation.
+2026-05-27 17:10:04.138 [main] [traceId=none] WARN  o.s.b.j.a.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-05-27 17:10:04.369 [main] [traceId=none] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name userDetailsService
+2026-05-27 17:10:04.895 [main] [traceId=none] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-05-27 17:10:04.916 [main] [traceId=none] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-27 17:10:04.924 [main] [traceId=none] INFO  o.s.s.config.TaskSchedulerRouter - No TaskScheduler/ScheduledExecutorService bean found for scheduled processing
+2026-05-27 17:10:04.930 [main] [traceId=none] INFO  c.s.b.c.CoreMacroserviceApplication - Started CoreMacroserviceApplication in 8.931 seconds (process running for 9.264)
+2026-05-27 17:10:16.088 [SpringApplicationShutdownHook] [traceId=none] INFO  o.s.boot.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-27 17:10:16.092 [tomcat-shutdown] [traceId=none] INFO  o.s.boot.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-27 17:10:16.099 [SpringApplicationShutdownHook] [traceId=none] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-27 17:10:16.101 [SpringApplicationShutdownHook] [traceId=none] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-05-27 17:10:16.334 [SpringApplicationShutdownHook] [traceId=none] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
