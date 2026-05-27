@@ -47,6 +47,10 @@ architecture-beta
     node m2_v3(disk)[EBS Vol 3] in raid10
     node m2_v4(disk)[EBS Vol 4] in raid10
     
+    %% Observability & Automation
+    node monitor(server)[AWS CloudWatch] in vpc
+    node trigger(server)[Amazon EventBridge] in vpc
+    
     %% Backup Path
     node s3_backups(database)[Amazon S3 (WAL + Snapshots)] in vpc
     
@@ -58,12 +62,18 @@ architecture-beta
     logical_dbs:B -- T:db_engine
     db_engine:B -- T:raid10
     raid10:R -- L:s3_backups
+
+    %% Monitoring Feedback Loop
+    gateway:L -- R:monitor
+    db_engine:L -- R:monitor
+    monitor:B -- T:trigger
+    trigger:R -- L:s3_backups
 ```
 
 ---
 
 ## 3. The Backup Strategy: "Durability without the Burden"
-To prevent performance degradation (the "Heavy Burden" of backing up on every write), the system uses a **Two-Tier Asynchronous Backup Orchestration**:
+To prevent performance degradation (the "Heavy Burden" of backing up on every write), the system uses a **Three-Tier Asynchronous Backup Orchestration**:
 
 ### Tier 1: Continuous WAL Archiving (Real-time RPO)
 *   **When:** Every time a transaction is committed, it is first written to the **Write-Ahead Log (WAL)** on the RAID 10 array.
@@ -71,9 +81,15 @@ To prevent performance degradation (the "Heavy Burden" of backing up on every wr
 *   **Benefit:** This is a sequential append operation (very fast) rather than a full backup, ensuring that the performance of the microservices is never throttled by the backup process.
 
 ### Tier 2: Scheduled EBS Snapshots (Point-in-Time RTO)
-*   **When:** Once every 24 hours (during low-traffic maintenance windows).
+*   **When:** Once every 24 hours during a **Monitoring-Driven Maintenance Window**.
 *   **The "Burden" Fix:** EBS snapshots are **incremental** and happen at the block level *below* the filesystem. The DB engine does not pause operations.
 *   **Benefit:** Provides a baseline "Safe State" to restore from quickly.
+
+### Tier 3: Monitoring-Driven Decision Making
+The "Low-Traffic Window" for Tier 2 backups is not guessed; it is determined through an empirical cycle:
+1.  **Metric Collection:** Using **AWS CloudWatch**, we track `RequestCount` (API Gateway) and `DatabaseConnections` (PostgreSQL) over a 14-day rolling period.
+2.  **Heatmap Analysis:** We identify the 60-minute window with the lowest traffic (typically 03:00 - 04:00 AM local time).
+3.  **Dynamic Scheduling:** The backup job is scheduled via **Amazon EventBridge** to trigger only during this empirically validated window.
 
 ---
 
@@ -92,5 +108,3 @@ In a true microservice architecture, the **IAM Service cannot query the Transact
 *   **"How do you handle backup overhead?":** "We do NOT perform full backups during operations. We use **Asynchronous WAL Archiving**. The database writes a tiny log of the change immediately (which is what RAID 10 is built for), and then 'ships' those logs to S3 in the background. This keeps the application latency near zero."
 *   **"What happens in a disaster?":** "We restore the latest daily block-level snapshot (Fast Recovery) and then 'Replay' the WAL logs from S3 (Precision Recovery). This gives us a 1-minute RPO without ever slowing down the user's experience."
 *   **"How did you choose the backup window?":** "The maintenance window is an **Empirical Decision**. We use **AWS CloudWatch** to monitor traffic patterns over time. By identifying the 'Trough' in our 24-hour cycle, we schedule heavy operations (like Snapshot consolidation) to ensure zero impact on our actual users. We don't guess; we measure."
-ground. This keeps the application latency near zero."
-*   **"What happens in a disaster?":** "We restore the latest daily block-level snapshot (Fast Recovery) and then 'Replay' the WAL logs from S3 (Precision Recovery). This gives us a 1-minute RPO without ever slowing down the user's experience."
