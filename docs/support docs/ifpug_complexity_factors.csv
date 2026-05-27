@@ -1,0 +1,18 @@
+STT,Đặc tính hệ thống,Điểm,Lý do (Rationale)
+1,Truyền dữ liệu (Data Communications),5,Hệ thống sử dụng kiến trúc phân tán với REST API WebSockets cho Chat và Kafka/RabbitMQ để truyền tin giữa các Microservices.
+2,Xử lý phân tán (Distributed Data Processing),4,"Dữ liệu và logic được chia nhỏ thành nhiều dịch vụ (Core, Auth, AI, Notif). Việc xử lý được thực hiện trên nhiều node (Kubernetes)."
+3,Hiệu năng (Performance),4,Yêu cầu phản hồi tìm kiếm bất động sản nhanh chóng và xử lý thời gian thực. Hệ thống sử dụng Redis để cache dữ liệu nhằm tối ưu tốc độ.
+4,Cấu hình tải cao (Heavily Used Configuration),3,"Hệ thống cần xử lý lượng lớn dữ liệu hình ảnh và người dùng truy cập cùng lúc, nhưng không phải là hệ thống giao dịch tần suất siêu cao (HFT)."
+5,Tỷ lệ giao dịch (Transaction Rate),3,"Các giao dịch như đăng tin, đặt lịch và thanh toán diễn ra đều đặn hàng ngày, đòi hỏi sự ổn định trong giờ cao điểm."
+6,Nhập liệu trực tuyến (Online Data Entry),5,100% các chức năng (đăng tin tạo hợp đồng báo cáo vi phạm) đều thực hiện trực tiếp qua giao diện Web/Mobile.
+7,Hiệu quả người dùng cuối (End-User Efficiency),4,"Tích hợp OCR để tự động điền form, bản đồ tìm kiếm thông minh và định giá AI giúp tối ưu hóa thời gian và thao tác của người dùng."
+8,Cập nhật trực tuyến (Online Update),4,Trạng thái bất động sản và hợp đồng cần được cập nhật ngay lập tức vào cơ sở dữ liệu để đảm bảo tính nhất quán trên toàn hệ thống.
+9,Xử lý phức tạp (Complex Processing),5,"Hệ thống có logic phức tạp: Định giá AI (FastAPI), xử lý AR (3D model), quy trình Escrow (ký quỹ bảo mật) và Webhook thanh toán đa bước."
+10,Khả năng tái sử dụng (Reusability),3,Thư viện bds-common được thiết kế để dùng chung DTO và Exception cho tất cả services đảm bảo tính module hóa.
+11,Dễ dàng cài đặt (Installation Ease),3,"Hệ thống sử dụng Docker và Kubernetes, giúp việc triển khai lên môi trường Cloud (AWS/Azure) trở nên tiêu chuẩn và tự động hóa."
+12,Dễ dàng vận hành (Operational Ease),3,Cung cấp Audit Logs (UC35) và các công cụ quản trị dành cho Admin để theo dõi và xử lý lỗi hệ thống hiệu quả.
+13,Đa địa điểm (Multiple Sites),3,Hệ thống hỗ trợ đa ngôn ngữ (UC34) và quản lý bất động sản theo cấp hành chính (Tỉnh/Huyện/Xã) trên toàn quốc.
+14,Dễ dàng thay đổi (Facilitate Change),4,Kiến trúc Microservices cho phép thêm mới hoặc sửa đổi các module (như thêm phương thức thanh toán mới) mà không ảnh hưởng đến toàn bộ hệ thống.
+,,,
+,Tổng điểm ảnh hưởng (DI),53,
+,Hệ số hiệu chỉnh (VAF),1.18,0.65 + (0.01 * 53)

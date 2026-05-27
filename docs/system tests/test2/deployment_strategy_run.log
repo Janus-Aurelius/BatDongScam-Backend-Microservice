@@ -1,0 +1,21 @@
+Processor P1 listening on port 3001
+Processor P2 listening on port 3002
+
+--- EXECUTING STRATEGY 1: CO-LOCATED ---
+Routing 100 Updates/sec and 30 Queries/sec ONLY to P1...
+
+--- EXECUTING STRATEGY 2: DISTRIBUTED/ROUTED ---
+Routing 50 Queries/sec to P1, 150 Updates/sec to P2...
+
+================ ARCHITECTURAL DEPLOYMENT REPORT ================
+STRATEGY 1: CO-LOCATED (All traffic to P1)
+  P1 CPU Load: 44.00% [PASS]
+  P2 CPU Load: 0.00% [PASS]
+
+STRATEGY 2: DISTRIBUTED (Routed by Op Type)
+  P1 CPU Load: 40.00% [PASS]
+  P2 CPU Load: 30.00% [PASS]
+
+OVERALL VERDICT: PASS
+=================================================================
+

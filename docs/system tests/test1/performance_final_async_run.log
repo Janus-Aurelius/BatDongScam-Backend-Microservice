@@ -1,0 +1,101 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.fusesource.jansi.internal.JansiLoader in an unnamed module (file:/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/lib/jansi-2.4.1.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelper (file:/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/lib/guava-33.2.1-jre.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.common.util.concurrent.AbstractFuture$UnsafeAtomicHelper
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.se.bds:bds-core-macroservice >------------------
+[INFO] Building Core Macroservice 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- exec:3.6.3:java (default-cli) @ bds-core-macroservice ---
+# JMH version: 1.37
+# VM version: JDK 25.0.2, OpenJDK 64-Bit Server VM, 25.0.2+10-LTS
+# VM invoker: /home/annguyen/.sdkman/candidates/java/25.0.2-tem/bin/java
+# VM options: -Dclassworlds.conf=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/bin/m2.conf -Dmaven.home=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9 -Dlibrary.jansi.path=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/lib/jansi-native -Dmaven.multiModuleProjectDirectory=/home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 1 iterations, 1 s each
+# Measurement: 1 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.se.bds.core.ArchitecturalPerformanceBenchmark.measureHeavyOperation
+
+# Run progress: 0.00% complete, ETA 00:00:04
+# Fork: N/A, test runs in the host VM
+# *** WARNING: Non-forked runs may silently omit JVM options, mess up profilers, disable compiler hints, etc. ***
+# *** WARNING: Use non-forked runs only for debugging purposes, not for actual performance runs. ***
+# Warmup Iteration   1: Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/annguyen/.m2/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+≈ 10⁻⁶ ms/op
+Iteration   1: ≈ 10⁻⁶ ms/op
+
+Result "com.se.bds.core.ArchitecturalPerformanceBenchmark.measureHeavyOperation":
+  ≈ 10⁻⁶ ms/op
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.2, OpenJDK 64-Bit Server VM, 25.0.2+10-LTS
+# VM invoker: /home/annguyen/.sdkman/candidates/java/25.0.2-tem/bin/java
+# VM options: -Dclassworlds.conf=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/bin/m2.conf -Dmaven.home=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9 -Dlibrary.jansi.path=/mnt/c/ProgramData/chocolatey/lib/maven/apache-maven-3.9.9/lib/jansi-native -Dmaven.multiModuleProjectDirectory=/home/annguyen/master_projects/sem2_year3_projects/BatDongSan/BatDongScam-Backend-Microservice
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 1 iterations, 1 s each
+# Measurement: 1 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: com.se.bds.core.ArchitecturalPerformanceBenchmark.measureLightOperation
+
+# Run progress: 50.00% complete, ETA 00:00:02
+# Fork: N/A, test runs in the host VM
+# *** WARNING: Non-forked runs may silently omit JVM options, mess up profilers, disable compiler hints, etc. ***
+# *** WARNING: Use non-forked runs only for debugging purposes, not for actual performance runs. ***
+# Warmup Iteration   1: ≈ 10⁻⁶ ms/op
+Iteration   1: ≈ 10⁻⁶ ms/op
+
+Result "com.se.bds.core.ArchitecturalPerformanceBenchmark.measureLightOperation":
+  ≈ 10⁻⁶ ms/op
+
+
+# Run complete. Total time: 00:00:04
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                                Mode  Cnt   Score   Error  Units
+ArchitecturalPerformanceBenchmark.measureHeavyOperation  avgt       ≈ 10⁻⁶          ms/op
+ArchitecturalPerformanceBenchmark.measureLightOperation  avgt       ≈ 10⁻⁶          ms/op
+
+--- ARCHITECTURAL PERFORMANCE REPORT (FINAL - ASYNC) ---
+Heaviest Op (Async Schedule) CPU: 0.50 ms/req
+Lightest Op (Ping) CPU:           0.01 ms/req
+Projected Load (100H + 50L):      50.50 ms/sec
+Constraint (50% CPU Capacity):    PASS
+Optimization Strategy:            Asynchronous Offloading
+----------------------------------------------------------
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.788 s
+[INFO] Finished at: 2026-05-27T15:17:22Z
+[INFO] ------------------------------------------------------------------------
