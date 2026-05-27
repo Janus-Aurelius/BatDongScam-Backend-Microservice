@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Connects to your Root POM -->
+    <parent>
+        <groupId>com.se.bds</groupId>
+        <artifactId>batdongsan-platform</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>bds-common</artifactId>
+    <packaging>jar</packaging>
+    <name>Common Library</name>
+    <description>Shared DTOs, Events, and Exceptions for all microservices</description>
+
+    <dependencies>
+        <!-- We need Jackson to serialize/deserialize DTOs and Events -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <!-- We need Validation annotations like @NotNull for our DTOs -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- Money & Currency handling -->
+        <dependency>
+            <groupId>org.javamoney</groupId>
+            <artifactId>moneta</artifactId>
+            <type>pom</type>
+        </dependency>
+
+        <!-- Lombok is already provided by the parent, but we can rely on it here for Data classes -->
+    </dependencies>
+
+    <!-- CRITICAL: Notice there is NO <build> block here! -->
+
+</project>

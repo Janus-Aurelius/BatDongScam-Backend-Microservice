@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: core-macroservice
+  datasource:
+    # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+  sql:
+    init:
+      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        # This tells Hibernate to automatically create schemas if they don't exist
+        hbm2ddl.create_namespaces: true
+
+# Modulith allows us to log events passing between modules
+logging:
+  level:
+    org.springframework.modulith: DEBUG
+
+# External Services Integration
+payway:
+  service-url: ${PAYWAY_SERVICE_URL:http://localhost:3000}
+  api-key: ${PAYWAY_API_KEY:default-key}
+  merchant-id: ${PAYWAY_MERCHANT_ID:default-merchant}
+  verify-key: ${PAYWAY_VERIFY_KEY:default-verify-key}
+  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL:http://localhost:8080}
+  return-url: ${PAYWAY_RETURN_URL:http://localhost:3000/return}
+
+cloudinary:
+  cloud-name: ${CLOUD_NAME:default}
+  api-key: ${CLOUDINARY_API_KEY:default}
+  api-secret: ${CLOUDINARY_API_SECRET:default}
+
+encryption:
+  key: ${ENCRYPTION_KEY:default-encryption-key-32-chars!!!}
