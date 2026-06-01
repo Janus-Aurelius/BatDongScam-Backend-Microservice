@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling
 public class CoreMacroserviceApplication {
 
     public static void main(String[] args) {

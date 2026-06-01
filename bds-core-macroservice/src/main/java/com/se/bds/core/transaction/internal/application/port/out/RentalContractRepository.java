@@ -14,4 +14,5 @@ public interface RentalContractRepository {
     List<RentalContract> findActiveByPropertyId(UUID propertyId);
     List<RentalContract> findByPdfStatus(com.se.bds.core.transaction.internal.domain.model.PdfStatus pdfStatus);
     List<RentalContract> findByPdfUrl(String pdfUrl);
+    List<RentalContract> findAllActive();
 }

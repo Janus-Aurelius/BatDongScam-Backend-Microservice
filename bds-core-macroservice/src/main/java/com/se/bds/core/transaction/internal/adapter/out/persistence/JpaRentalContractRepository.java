@@ -21,4 +21,7 @@ public interface JpaRentalContractRepository extends JpaRepository<RentalContrac
     List<RentalContract> findByPdfStatus(com.se.bds.core.transaction.internal.domain.model.PdfStatus pdfStatus);
 
     List<RentalContract> findByPdfUrl(String pdfUrl);
+
+    @Query("SELECT c FROM RentalContract c WHERE c.status = 'ACTIVE'")
+    List<RentalContract> findAllActive();
 }

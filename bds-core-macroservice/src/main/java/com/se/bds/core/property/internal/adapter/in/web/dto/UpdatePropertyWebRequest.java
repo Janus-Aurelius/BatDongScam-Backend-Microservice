@@ -27,6 +27,7 @@ public record UpdatePropertyWebRequest(
         Double latitude,
         Double longitude,
         List<UUID> mediaIdsToRemove,
-        List<UUID> documentIdsToRemove
+        List<UUID> documentIdsToRemove,
+        java.util.List<DocumentMetadataWebRequest> documentsMetadata
         ) {
 }

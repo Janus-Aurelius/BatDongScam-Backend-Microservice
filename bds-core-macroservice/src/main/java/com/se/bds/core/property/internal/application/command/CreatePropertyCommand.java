@@ -1,6 +1,7 @@
 package com.se.bds.core.property.internal.application.command;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public record CreatePropertyCommand(
@@ -20,6 +21,7 @@ public record CreatePropertyCommand(
         String transactionType,
         String address,
         Double latitude,
-        Double longitude
+        Double longitude,
+        List<UploadDocumentCommand> documentsMetadata
 ) {
 }

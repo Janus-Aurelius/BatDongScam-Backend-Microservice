@@ -11,4 +11,5 @@ import org.mapstruct.MappingConstants;
 public interface PropertyWebMapper {
     CreatePropertyCommand toCreatePropertyCommand (CreatePropertyWebRequest request);
     UpdatePropertyCommand toUpdatePropertyCommand(UpdatePropertyWebRequest request);
+    com.se.bds.core.property.internal.application.command.UploadDocumentCommand toUploadDocumentCommand(com.se.bds.core.property.internal.adapter.in.web.dto.DocumentMetadataWebRequest request);
 }

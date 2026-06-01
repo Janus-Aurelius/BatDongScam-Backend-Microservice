@@ -18,4 +18,13 @@ public interface ContractRepository {
     java.util.List<Contract> findContractsBySignedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     java.util.List<Contract> findByPropertyId(UUID propertyId);
+
+    org.springframework.data.domain.Page<Contract> findAllWithFilters(
+            UUID customerId,
+            UUID agentId,
+            UUID propertyId,
+            com.se.bds.core.transaction.internal.domain.model.ContractStatus status,
+            com.se.bds.core.transaction.internal.domain.model.ContractType contractType,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -23,6 +23,7 @@ public record UpdatePropertyCommand (
         Double latitude,
         Double longitude,
         List<UUID> mediaIdsToRemove,
-        List<UUID> documentIdsToRemove
+        List<UUID> documentIdsToRemove,
+        List<UploadDocumentCommand> documentsMetadata
 ) {
 }

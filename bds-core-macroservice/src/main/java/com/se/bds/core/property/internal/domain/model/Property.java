@@ -147,6 +147,10 @@ public class Property {
     @Builder.Default
     private List<Media> mediaList = new ArrayList<>();
 
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<IdentificationDocument> documents = new ArrayList<>();
+
     // ── Audit fields ───────────────────────────────────────────────────
 
     @CreationTimestamp
