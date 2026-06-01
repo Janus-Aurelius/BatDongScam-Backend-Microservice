@@ -103,3 +103,13 @@ VALUES ('80000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-0000000
 INSERT INTO agent_review (review_id, agent_id, customer_id, contract_id, contract_type, rating, comment, created_at, updated_at)
 VALUES ('90000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', '60000000-0000-0000-0000-000000000001', 'RENTAL', 5, 'Môi giới làm việc rất có tâm, hỗ trợ giấy tờ nhiệt tình!', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     ON CONFLICT (review_id) DO NOTHING;
+
+
+-- ====================================================================
+-- 7. MODULE GIẤY TỜ XÁC MINH (VERIFICATION DOCUMENTS MODULE)
+-- ====================================================================
+INSERT INTO document_types (document_type_id, name, description, is_compulsory, created_at, updated_at)
+VALUES
+    ('a0000000-0000-0000-0000-000000000001', 'Certificate of Land Use Rights', 'Sổ hồng / Sổ đỏ chính chủ xác minh quyền sở hữu đất và tài sản gắn liền với đất', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('a0000000-0000-0000-0000-000000000002', 'General Property Documents', 'Các giấy tờ xác minh tài sản chung khác', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT (document_type_id) DO NOTHING;

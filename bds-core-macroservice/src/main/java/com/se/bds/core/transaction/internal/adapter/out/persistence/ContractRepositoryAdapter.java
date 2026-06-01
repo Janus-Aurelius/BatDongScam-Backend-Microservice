@@ -40,4 +40,15 @@ public class ContractRepositoryAdapter implements ContractRepository {
     public List<Contract> findByPropertyId(UUID propertyId) {
         return jpaContractRepository.findByPropertyId(propertyId);
     }
+
+    @Override
+    public org.springframework.data.domain.Page<Contract> findAllWithFilters(
+            UUID customerId,
+            UUID agentId,
+            UUID propertyId,
+            com.se.bds.core.transaction.internal.domain.model.ContractStatus status,
+            com.se.bds.core.transaction.internal.domain.model.ContractType contractType,
+            org.springframework.data.domain.Pageable pageable) {
+        return jpaContractRepository.findAllWithFilters(customerId, agentId, propertyId, status, contractType, pageable);
+    }
 }

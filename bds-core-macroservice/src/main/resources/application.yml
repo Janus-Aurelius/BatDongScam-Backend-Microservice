@@ -1,6 +1,11 @@
 spring:
   application:
     name: core-macroservice
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
