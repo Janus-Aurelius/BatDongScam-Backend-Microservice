@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "identification_documents")
+@Table(name = "identification_documents", schema = "property_catalog")
 @Builder
 @Getter
 @Setter

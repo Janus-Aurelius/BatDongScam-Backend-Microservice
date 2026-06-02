@@ -1,3 +1,5 @@
+SET search_path TO property_catalog, transaction_workflow, public;
+
 -- ====================================================================
 -- 1. MODULE ĐỊA LÝ (LOCATION MODULE)
 -- ====================================================================

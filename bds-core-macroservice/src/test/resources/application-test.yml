@@ -25,3 +25,7 @@ logging:
   level:
     root: INFO
     com.se.bds.core: DEBUG
+
+iam:
+  service-url: http://localhost:8081/mock/iam
+

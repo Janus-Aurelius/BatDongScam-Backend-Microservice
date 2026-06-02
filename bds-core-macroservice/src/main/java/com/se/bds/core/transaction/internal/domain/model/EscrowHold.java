@@ -19,7 +19,7 @@ import java.util.UUID;
  * <p>Uses optimistic locking ({@code @Version}) for concurrent escrow state transitions.
  */
 @Entity
-@Table(name = "escrow_hold")
+@Table(name = "escrow_hold", schema = "transaction_workflow")
 @Getter
 @Setter
 @NoArgsConstructor

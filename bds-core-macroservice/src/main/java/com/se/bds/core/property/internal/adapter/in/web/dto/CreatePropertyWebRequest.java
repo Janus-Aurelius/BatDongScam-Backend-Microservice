@@ -25,6 +25,6 @@ public record CreatePropertyWebRequest(
         @NotBlank String address,
         Double latitude,
         Double longitude,
-        List<DocumentMetadataWebRequest> documentsMetadata
+        java.util.List<DocumentMetadataWebRequest> documentsMetadata
         ) {
 }

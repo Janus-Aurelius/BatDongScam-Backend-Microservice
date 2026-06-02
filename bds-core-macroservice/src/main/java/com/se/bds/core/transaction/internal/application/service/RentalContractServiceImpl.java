@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.se.bds.core.transaction.internal.application.port.out.UserValidationPort;
+
 @Service
 @AllArgsConstructor
 public class RentalContractServiceImpl implements RentalContractUseCase {
@@ -36,6 +38,7 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
     private final DepositContractUseCase depositContractUseCase;
     private final PropertyFacade propertyFacade;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserValidationPort userValidationPort;
 
     /**
      * @param command
@@ -45,6 +48,12 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
     @Transactional
     public RentalContract createRentalContract(CreateRentalContractCommand command) {
         propertyFacade.validatePropertyAvailableForContract(new PropertyId(command.propertyId()), ContractType.RENTAL.name());
+
+        userValidationPort.validateCustomer(command.customerId());
+        PropertySnapshot property = propertyFacade.getPropertySnapshot(new PropertyId(command.propertyId()));
+        if (property.assignedAgentId() != null) {
+            userValidationPort.validateAgent(property.assignedAgentId());
+        }
 
         //1. validate deposit contract if provided
         DepositContract deposit = null;
@@ -73,11 +82,13 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
         RentalContract rentalContract = new RentalContract();
         rentalContract.setCustomerId(command.customerId());
         rentalContract.setPropertyId(command.propertyId());
+        if (property.assignedAgentId() != null) {
+            rentalContract.setAgentId(property.assignedAgentId());
+        }
         if (deposit != null) {
             rentalContract.setDepositContract(deposit);
         }
 
-        PropertySnapshot property = propertyFacade.getPropertySnapshot(new PropertyId(command.propertyId()));
         BigDecimal commissionRate = property.commissionRate() != null ? property.commissionRate() : BigDecimal.ZERO;
         // For rental, commission is often one month's rent or a percentage of it. 
         // Here we'll use the commissionRate as a percentage of monthlyRentAmount.

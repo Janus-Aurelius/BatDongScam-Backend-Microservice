@@ -21,7 +21,7 @@ import java.util.UUID;
  * </ul>
  */
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", schema = "transaction_workflow")
 @Builder
 @Getter
 @Setter

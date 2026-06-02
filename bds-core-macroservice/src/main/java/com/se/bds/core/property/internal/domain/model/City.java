@@ -5,7 +5,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cities")
+@Table(name = "cities", schema = "property_catalog")
 @Getter
 @Setter
 @NoArgsConstructor

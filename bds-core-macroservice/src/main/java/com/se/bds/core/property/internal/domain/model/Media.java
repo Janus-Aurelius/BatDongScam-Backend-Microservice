@@ -18,7 +18,7 @@ import java.util.UUID;
  * </ul>
  */
 @Entity
-@Table(name = "media")
+@Table(name = "media", schema = "property_catalog")
 @Builder
 @Getter
 @Setter
