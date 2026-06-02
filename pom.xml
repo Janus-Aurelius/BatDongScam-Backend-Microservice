@@ -18,6 +18,8 @@
 	<modules>
     <module>bds-core-macroservice</module>
 		<module>bds-common</module>
+		<module>bds-financial-service</module>
+		<module>bds-iam-service</module>
 	</modules>
 
 	<url/>
