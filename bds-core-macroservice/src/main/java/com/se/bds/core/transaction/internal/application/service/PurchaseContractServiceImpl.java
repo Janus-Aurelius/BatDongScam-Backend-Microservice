@@ -27,6 +27,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.se.bds.core.transaction.internal.application.port.out.UserValidationPort;
+
 @Service
 @RequiredArgsConstructor
 public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
@@ -35,6 +37,7 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final DepositContractUseCase depositContractUseCase;
     private final com.se.bds.core.transaction.internal.application.port.out.DepositContractRepository depositContractRepository;
+    private final UserValidationPort userValidationPort;
 
 
     /**
@@ -50,6 +53,13 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         {
             throw new BusinessException(MSG12.CODE, "Active contract already exists for this property");
         }
+
+        userValidationPort.validateCustomer(command.customerId());
+        PropertySnapshot property = propertyFacade.getPropertySnapshot(new PropertyId(command.propertyId()));
+        if (property.assignedAgentId() != null) {
+            userValidationPort.validateAgent(property.assignedAgentId());
+        }
+
         // 1. transition logic
         // check for deposit contract
         DepositContract deposit = null;
@@ -77,11 +87,13 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
         PurchaseContract contract = new PurchaseContract();
         contract.setPropertyId(command.propertyId());
         contract.setCustomerId(command.customerId());
+        if (property.assignedAgentId() != null) {
+            contract.setAgentId(property.assignedAgentId());
+        }
         if (deposit != null) {
             contract.setDepositContract(deposit);
         }
 
-        PropertySnapshot property = propertyFacade.getPropertySnapshot(new PropertyId(command.propertyId()));
         java.math.BigDecimal commissionRate = property.commissionRate() != null ? property.commissionRate() : java.math.BigDecimal.ZERO;
         java.math.BigDecimal commissionAmount = command.agreedPrice().multiply(commissionRate);
         contract.setCommissionAmount(commissionAmount);

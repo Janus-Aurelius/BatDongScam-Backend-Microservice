@@ -45,3 +45,6 @@ cloudinary:
 
 encryption:
   key: ${ENCRYPTION_KEY:default-encryption-key-32-chars!!!}
+
+iam:
+  service-url: ${IAM_SERVICE_URL:http://localhost:8081}

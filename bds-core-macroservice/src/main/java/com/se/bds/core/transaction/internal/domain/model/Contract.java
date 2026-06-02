@@ -25,7 +25,7 @@ import java.util.*;
  * </ul>
  */
 @Entity
-@Table(name = "contract")
+@Table(name = "contract", schema = "transaction_workflow")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "contract_type", discriminatorType = DiscriminatorType.STRING)
 @Getter

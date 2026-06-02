@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * A purchase (sale) contract representing a one-time property transfer.
  */
 @Entity
-@Table(name = "purchase_contract")
+@Table(name = "purchase_contract", schema = "transaction_workflow")
 @DiscriminatorValue("PURCHASE")
 @Getter
 @Setter

@@ -31,7 +31,7 @@ import java.util.*;
  * </ul>
  */
 @Entity
-@Table(name = "properties")
+@Table(name = "properties", schema = "property_catalog")
 @Builder
 @Getter
 @Setter
