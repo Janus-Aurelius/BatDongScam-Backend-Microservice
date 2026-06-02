@@ -12,12 +12,13 @@ target/
 .settings
 .springBeans
 .sts4-cache
-
+node_modules/
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
+.antigravitycli/
 
 ### NetBeans ###
 /nbproject/private/
