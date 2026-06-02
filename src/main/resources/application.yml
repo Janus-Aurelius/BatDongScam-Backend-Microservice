@@ -1,0 +1,50 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  application:
+    name: ${APP_NAME}
+  security:
+    user:
+      name: admin
+      password: 123456
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRESQL_HOST}:${POSTGRESQL_EXTERNAL_PORT}/${POSTGRESQL_DB}
+    username: ${POSTGRESQL_USER}
+    password: ${POSTGRESQL_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO}
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.se100.iam: DEBUG
+
+app:
+  secret: ${APP_SECRET}
+  jwt:
+    token:
+      expires-in: ${APP_JWT_TOKEN_EXPIRES_IN}
+    refresh-token:
+      expires-in: ${APP_JWT_REFRESH_TOKEN_EXPIRES_IN}
+
+cloudinary:
+  cloud-name: ${CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
