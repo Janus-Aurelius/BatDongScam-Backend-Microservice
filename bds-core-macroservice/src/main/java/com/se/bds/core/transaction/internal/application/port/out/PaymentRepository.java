@@ -21,4 +21,19 @@ public interface PaymentRepository {
     List<Payment> findByContractId(UUID contractId);
 
     List<Payment> findRevenuePaymentsInMonth(int month, int year);
+
+    org.springframework.data.domain.Page<Payment> searchPayments(
+            List<com.se.bds.core.transaction.internal.domain.model.PaymentType> paymentTypes,
+            List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            UUID payerId,
+            UUID contractId,
+            UUID propertyId,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    org.springframework.data.domain.Page<Payment> searchPaymentsByPayer(
+            UUID payerId,
+            List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

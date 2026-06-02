@@ -25,6 +25,7 @@ public class ContractMaintenanceService implements ContractMaintenanceUseCase {
     private final DepositContractRepository depositRepo;
     private final RentalContractRepository rentalRepo;
     private final PurchaseContractRepository purchaseRepo;
+    private final com.se.bds.core.transaction.internal.application.port.out.ContractRepository contractRepo;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -64,6 +65,44 @@ public class ContractMaintenanceService implements ContractMaintenanceUseCase {
                 event.propertyId().value(), 
                 "System: Property transitioned to " + status.toLowerCase());
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateContractDraft(UUID contractId, java.time.LocalDate startDate, java.time.LocalDate endDate, String specialTerms) {
+        com.se.bds.core.transaction.internal.domain.model.Contract contract = contractRepo.findById(contractId)
+                .orElseThrow(() -> new com.se.bds.common.exception.BusinessException("CONTRACT_NOT_FOUND", "Contract not found: " + contractId));
+        
+        if (contract.getStatus() != com.se.bds.core.transaction.internal.domain.model.ContractStatus.DRAFT) {
+            throw new com.se.bds.common.exception.BusinessException("INVALID_STATUS", "Only draft contracts can be updated");
+        }
+
+        contract.setStartDate(startDate);
+        contract.setEndDate(endDate);
+        contract.setSpecialTerms(specialTerms);
+        contractRepo.save(contract);
+        log.info("[ContractMaintenanceService] Contract draft updated: contractId={}", contractId);
+    }
+
+    @Override
+    @Transactional
+    public void rateContract(UUID contractId, UUID raterUserId, Short rating, String comment) {
+        com.se.bds.core.transaction.internal.domain.model.Contract contract = contractRepo.findById(contractId)
+                .orElseThrow(() -> new com.se.bds.common.exception.BusinessException("CONTRACT_NOT_FOUND", "Contract not found: " + contractId));
+
+        // Rater must be the customer of this contract
+        if (contract.getCustomerId() == null || !contract.getCustomerId().equals(raterUserId)) {
+            throw new com.se.bds.common.exception.BusinessException("ACCESS_DENIED", "Only the customer associated with the contract can rate it");
+        }
+
+        if (contract.getStatus() != com.se.bds.core.transaction.internal.domain.model.ContractStatus.COMPLETED) {
+            throw new com.se.bds.common.exception.BusinessException("INVALID_STATUS", "Contracts can only be rated once they are COMPLETED");
+        }
+
+        contract.setRating(rating);
+        contract.setComment(comment);
+        contractRepo.save(contract);
+        log.info("[ContractMaintenanceService] Contract rated: contractId={}, rating={}", contractId, rating);
     }
 
     private void publishCancellation(UUID id, String type, UUID propId, String reason) {
