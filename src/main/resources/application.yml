@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+payway:
+  service-url: ${PAYWAY_SERVICE_URL}
+  api-key: ${PAYWAY_API_KEY}
+  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL}
+  return-url: ${PAYWAY_RETURN_URL}
+  verify-key: ${PAYWAY_VERIFY_KEY}
+
+paypal:
+  client-id: ${PAYPAL_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET}
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  return-url: ${PAYPAL_RETURN_URL}
+  cancel-url: ${PAYPAL_CANCEL_URL}
+  brand-name: ${PAYPAL_BRAND_NAME:BDS Platform}
