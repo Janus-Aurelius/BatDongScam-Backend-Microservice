@@ -1,0 +1,39 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: notification-service
+  jpa:
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: false
+        format_sql: true
+    open-in-view: false
+  datasource:
+    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_EXTERNAL_PORT:5432}/${POSTGRESQL_DB:bds}
+    username: ${POSTGRESQL_USER:postgres}
+    password: ${POSTGRESQL_PASSWORD:postgres}
+
+firebase:
+  enabled: ${FIREBASE_ENABLED:false}
+  app: ${FIREBASE_APP_NAME:bds-firebase}
+  credentials:
+    file: ${FIREBASE_CREDENTIALS_FILE:}
+  project-id: ${FIREBASE_PROJECT_ID:}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.se100.bds.notificationservice: DEBUG

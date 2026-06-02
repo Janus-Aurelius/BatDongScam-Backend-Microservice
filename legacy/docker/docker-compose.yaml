@@ -1,56 +1,109 @@
-name: bds-project
+name: bds-microservices
 
 services:
+  # ===================== Infrastructure =====================
+  postgres:
+    image: postgres:13.11-bullseye
+    container_name: ${PROJECT_NAME:-bds}-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRESQL_DB:-bds}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRESQL_USER:-postgres}
+    ports:
+      - "${POSTGRESQL_EXTERNAL_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bds-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: ${PROJECT_NAME:-bds}-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: ${MONGODB_DB:-bds}
+    ports:
+      - "${MONGODB_EXTERNAL_PORT:-27017}:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - bds-network
+
+  # ===================== Microservices =====================
+  search-service:
+    build:
+      context: ../services/search-service
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-bds}-search-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-admin123}@mongodb:27017/${MONGODB_DB:-bds}?authSource=admin
+    networks:
+      - bds-network
+
+  notification-service:
+    build:
+      context: ../services/notification-service
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-bds}-notification-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_EXTERNAL_PORT: 5432
+      POSTGRESQL_DB: ${POSTGRESQL_DB:-bds}
+      POSTGRESQL_USER: ${POSTGRESQL_USER:-postgres}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-postgres}
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED:-false}
+    networks:
+      - bds-network
+
+  api-gateway:
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-bds}-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - search-service
+      - notification-service
+    environment:
+      SEARCH_SERVICE_URL: http://search-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+      CORE_SERVICE_URL: http://spring-app:8081
+      APP_SECRET: ${APP_SECRET:-BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
+    networks:
+      - bds-network
+
+  # Core Macroservice (existing monolith)
   spring-app:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: ${PROJECT_NAME}-server
+    container_name: ${PROJECT_NAME:-bds}-server
     ports:
-      - ${SERVER_PORT}:${SERVER_PORT}
+      - "8081:8081"
     depends_on:
       - postgres
       - mongodb
-    env_file:
-      - ../.env
+#    env_file:
+#      - ../.env
     networks:
-      - bds-project-network
-  postgres:
-    image: postgres:13.11-bullseye
-    container_name: ${PROJECT_NAME}-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: ${POSTGRESQL_DB}
-      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
-      POSTGRES_USER: ${POSTGRESQL_USER}
-    ports:
-      - ${POSTGRESQL_EXTERNAL_PORT}:${POSTGRESQL_PORT}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ../../var/logs/postgresql:/var/log/postgresql
-    networks:
-      - bds-project-network
-
-  mongodb:
-    image: mongo:7.0
-    container_name: ${PROJECT_NAME}-mongodb
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGODB_DB}
-    ports:
-      - ${MONGODB_EXTERNAL_PORT}:27017
-    volumes:
-      - mongodb-data:/data/db
-      - ../../var/logs/mongodb:/var/log/mongodb
-    networks:
-      - bds-project-network
+      - bds-network
 
 volumes:
   postgres-data:
   mongodb-data:
 
 networks:
-  bds-project-network:
+  bds-network:
     driver: bridge

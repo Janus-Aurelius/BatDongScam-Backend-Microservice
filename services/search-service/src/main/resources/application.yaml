@@ -1,0 +1,22 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: search-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/bds}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.se100.bds.searchservice: DEBUG
