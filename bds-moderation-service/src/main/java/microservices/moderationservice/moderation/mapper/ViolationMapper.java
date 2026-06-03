@@ -6,6 +6,7 @@ import microservices.moderationservice.moderation.dto.response.ViolationAdminIte
 import microservices.moderationservice.moderation.dto.response.ViolationUserDetails;
 import microservices.moderationservice.moderation.dto.response.ViolationUserItem;
 import microservices.moderationservice.moderation.entity.ViolationReport;
+import microservices.moderationservice.moderation.entity.ViolationEvidence;
 
 import java.util.List;
 
@@ -43,8 +44,8 @@ public class ViolationMapper {
     }
 
     public ViolationUserDetails toUserDetails(ViolationReport violation) {
-        List<String> evidenceUrls = violation.getEvidenceUrls() != null
-                ? List.copyOf(violation.getEvidenceUrls())
+        List<String> evidenceUrls = violation.getEvidenceList() != null
+                ? violation.getEvidenceList().stream().map(ViolationEvidence::getFileUrl).toList()
                 : List.of();
 
         return ViolationUserDetails.builder()
@@ -66,8 +67,8 @@ public class ViolationMapper {
     }
 
     public ViolationAdminDetails toAdminDetails(ViolationReport violation) {
-        List<String> evidenceUrls = violation.getEvidenceUrls() != null
-                ? List.copyOf(violation.getEvidenceUrls())
+        List<String> evidenceUrls = violation.getEvidenceList() != null
+                ? violation.getEvidenceList().stream().map(ViolationEvidence::getFileUrl).toList()
                 : List.of();
 
         return ViolationAdminDetails.builder()

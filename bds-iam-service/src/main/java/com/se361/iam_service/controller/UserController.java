@@ -56,4 +56,16 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/users/{userId}/status")
+    public ResponseEntity<Void> updateUserStatus(
+            @PathVariable UUID userId,
+            @RequestParam String status) {
+        try {
+            userService.updateStatus(userId, status);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

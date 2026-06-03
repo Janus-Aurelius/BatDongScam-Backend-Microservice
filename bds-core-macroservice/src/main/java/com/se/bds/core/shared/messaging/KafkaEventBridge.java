@@ -46,8 +46,13 @@ public class KafkaEventBridge {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyStatusChanged(PropertyStatusChangedEvent event) {
-        publish("property-status-changed", event.propertyId().toString(), event);
+    public void handlePropertyStatusChanged(com.se.bds.core.property.api.event.PropertyStatusChangedEvent event) {
+        com.se.bds.common.event.PropertyStatusChangedEvent commonEvent = new com.se.bds.common.event.PropertyStatusChangedEvent(
+                event.propertyId().value(),
+                event.oldStatus(),
+                event.newStatus()
+        );
+        publish("property-status-changed", event.propertyId().value().toString(), commonEvent);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

@@ -15,8 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import microservices.moderationservice.common.Constants;
 import microservices.moderationservice.common.model.AbstractBaseEntity;
+import com.se.bds.common.enums.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,25 +39,25 @@ public class ViolationReport extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "related_entity_type", nullable = false)
-    private Constants.ViolationReportedTypeEnum relatedEntityType;
+    private ViolationReportedTypeEnum relatedEntityType;
 
     @Column(name = "related_entity_id", nullable = false)
     private UUID relatedEntityId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "violation_type", nullable = false)
-    private Constants.ViolationTypeEnum violationType;
+    private ViolationTypeEnum violationType;
 
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Constants.ViolationStatusEnum status;
+    private ViolationStatusEnum status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "penalty_applied")
-    private Constants.PenaltyAppliedEnum penaltyApplied;
+    private PenaltyAppliedEnum penaltyApplied;
 
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
@@ -67,7 +67,6 @@ public class ViolationReport extends AbstractBaseEntity {
 
     @ElementCollection
     @CollectionTable(name = "violation_evidence_files", joinColumns = @JoinColumn(name = "violation_id"))
-    @Column(name = "file_url", nullable = false, length = 1000)
     @Builder.Default
-    private List<String> evidenceUrls = new ArrayList<>();
+    private List<ViolationEvidence> evidenceList = new ArrayList<>();
 }

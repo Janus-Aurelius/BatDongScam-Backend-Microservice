@@ -1,10 +1,10 @@
 package microservices.moderationservice.api.exception;
 
-import microservices.moderationservice.api.base.ResponseFactory;
-import microservices.moderationservice.api.response.ErrorResponse;
-import microservices.moderationservice.common.exception.NotFoundException;
+import com.se.bds.common.dto.ApiResponse;
+import com.se.bds.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import microservices.moderationservice.api.base.ResponseFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -22,13 +22,19 @@ import java.util.stream.Collectors;
 public class AppExceptionHandler {
     private final ResponseFactory responseFactory;
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
-        return responseFactory.error(HttpStatus.NOT_FOUND, ex.getMessage(), "NOT_FOUND");
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return responseFactory.error(HttpStatus.valueOf(ex.getStatusCode().value()), ex.getReason(), "STATUS_ERROR");
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
+        log.warn("BusinessException: {}", ex.getMessage());
+        return responseFactory.error(HttpStatus.BAD_REQUEST, ex.getMessage(), "BUSINESS_ERROR");
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
-    public ResponseEntity<ErrorResponse> handleValidationException(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(Exception ex) {
         String details;
         if (ex instanceof MethodArgumentNotValidException manve) {
             details = manve.getBindingResult().getFieldErrors().stream()
@@ -44,18 +50,18 @@ public class AppExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String message = "Invalid value for parameter '" + ex.getName() + "'";
         return responseFactory.error(HttpStatus.BAD_REQUEST, message, "TYPE_MISMATCH");
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
         return responseFactory.error(HttpStatus.FORBIDDEN, ex.getMessage(), "FORBIDDEN");
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);
         return responseFactory.error(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "INTERNAL_ERROR");
     }

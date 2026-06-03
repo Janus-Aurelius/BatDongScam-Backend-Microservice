@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import microservices.moderationservice.common.Constants;
+import com.se.bds.common.enums.*;
 
 import java.util.UUID;
 
@@ -24,14 +24,14 @@ public class ViolationCreateRequest {
     private UUID reporterId;
 
     @NotNull(message = "Violation type is required")
-    private Constants.ViolationTypeEnum violationType;
+    private ViolationTypeEnum violationType;
 
     @NotBlank(message = "Description is required")
     @Size(min = 10, max = 1000, message = "Description must be between 10 and 1000 characters")
     private String description;
 
     @NotNull(message = "Violation reported type is required")
-    private Constants.ViolationReportedTypeEnum violationReportedType;
+    private ViolationReportedTypeEnum violationReportedType;
 
     @NotNull(message = "Reported entity ID is required")
     private UUID reportedId;

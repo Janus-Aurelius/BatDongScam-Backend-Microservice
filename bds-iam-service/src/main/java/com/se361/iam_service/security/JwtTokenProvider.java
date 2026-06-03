@@ -38,7 +38,11 @@ public class JwtTokenProvider {
     }
 
     public String generateJwt(String userId) {
-        return buildToken(userId, tokenExpiresIn);
+        return generateJwt(userId, null);
+    }
+
+    public String generateJwt(String userId, String roles) {
+        return buildToken(userId, tokenExpiresIn, roles);
     }
 
     public String generateRefresh(String userId) {
@@ -50,7 +54,7 @@ public class JwtTokenProvider {
         if (rememberMe != null && rememberMe) {
             expiresIn *= 30;
         }
-        return buildToken(userId, expiresIn);
+        return buildToken(userId, expiresIn, null);
     }
 
     public String getUserIdFromToken(String token) {
@@ -98,13 +102,16 @@ public class JwtTokenProvider {
 
     // ── private helpers ──────────────────────────────────────────────────────
 
-    private String buildToken(String subject, Long expiresIn) {
-        return Jwts.builder()
+    private String buildToken(String subject, Long expiresIn, String roles) {
+        var builder = Jwts.builder()
                 .subject(subject)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiresIn))
-                .signWith(signingKey())
-                .compact();
+                .signWith(signingKey());
+        if (roles != null) {
+            builder.claim("roles", roles);
+        }
+        return builder.compact();
     }
 
     private Jws<Claims> parseToken(String token) {

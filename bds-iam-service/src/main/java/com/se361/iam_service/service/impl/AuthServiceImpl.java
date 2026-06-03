@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
         return TokenResponse.builder()
-                .token(jwtTokenProvider.generateJwt(userId.toString()))
+                .token(jwtTokenProvider.generateJwt(userId.toString(), user.getRole().name()))
                 .refreshToken(jwtTokenProvider.generateRefresh(userId.toString(), rememberMe))
                 .userId(userId.toString())
                 .role(user.getRole().name())

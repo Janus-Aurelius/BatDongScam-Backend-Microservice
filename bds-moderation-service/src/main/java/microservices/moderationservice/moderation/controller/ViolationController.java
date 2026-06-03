@@ -10,9 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import microservices.moderationservice.api.base.AbstractBaseController;
-import microservices.moderationservice.api.response.PageResponse;
-import microservices.moderationservice.api.response.SingleResponse;
-import microservices.moderationservice.common.Constants;
+import com.se.bds.common.dto.PagedData;
+import com.se.bds.common.enums.*;
 import microservices.moderationservice.moderation.dto.request.UpdateViolationRequest;
 import microservices.moderationservice.moderation.dto.request.ViolationCreateRequest;
 import microservices.moderationservice.moderation.dto.response.ViolationAdminDetails;
@@ -24,15 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -40,7 +31,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/violations")
+@RequestMapping("/api/violations")
 @Tag(name = "Moderation - Violation", description = "Violation report management API")
 public class ViolationController extends AbstractBaseController {
     private final ViolationService violationService;
@@ -50,12 +41,7 @@ public class ViolationController extends AbstractBaseController {
             summary = "Create a new violation report",
             description = "Create a violation report for a property or user. Evidence files are optional."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Violation report created successfully",
-                    content = @Content(schema = @Schema(implementation = SingleResponse.class))),
-            @ApiResponse(responseCode = "422", description = "Validation failed")
-    })
-    public ResponseEntity<SingleResponse<ViolationUserDetails>> createViolationReport(
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationUserDetails>> createViolationReport(
             @Parameter(description = "Violation report payload in JSON format", required = true)
             @Valid @RequestPart("payload") ViolationCreateRequest request,
             @Parameter(description = "Optional evidence files")
@@ -67,17 +53,13 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/admin")
     @Operation(summary = "Get all violation reports (Admin)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Violation reports retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class)))
-    })
-    public ResponseEntity<PageResponse<ViolationAdminItem>> getAdminViolationItems(
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<PagedData<ViolationAdminItem>>> getAdminViolationItems(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(required = false) List<Constants.ViolationTypeEnum> violationTypes,
-            @RequestParam(required = false) List<Constants.ViolationStatusEnum> statuses,
+            @RequestParam(required = false) List<ViolationTypeEnum> violationTypes,
+            @RequestParam(required = false) List<ViolationStatusEnum> statuses,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year
@@ -91,14 +73,14 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/admin/{id}")
     @Operation(summary = "Get violation report details (Admin)")
-    public ResponseEntity<SingleResponse<ViolationAdminDetails>> getViolationAdminDetailsById(@PathVariable UUID id) {
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationAdminDetails>> getViolationAdminDetailsById(@PathVariable UUID id) {
         ViolationAdminDetails details = violationService.getViolationAdminDetailsById(id);
         return responseFactory.successSingle(details, "Violation details retrieved successfully");
     }
 
     @PutMapping("/admin/{id}")
     @Operation(summary = "Update violation report (Admin)")
-    public ResponseEntity<SingleResponse<ViolationAdminDetails>> updateViolationReport(
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationAdminDetails>> updateViolationReport(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateViolationRequest request
     ) {
@@ -108,7 +90,7 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/my-violations")
     @Operation(summary = "Get my violation reports")
-    public ResponseEntity<PageResponse<ViolationUserItem>> getMyViolationItems(
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<PagedData<ViolationUserItem>>> getMyViolationItems(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
@@ -121,7 +103,7 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/my-violations/{id}")
     @Operation(summary = "Get my violation report details")
-    public ResponseEntity<SingleResponse<ViolationUserDetails>> getViolationUserDetailsById(@PathVariable UUID id) {
+    public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationUserDetails>> getViolationUserDetailsById(@PathVariable UUID id) {
         ViolationUserDetails details = violationService.getViolationUserDetailsById(id);
         return responseFactory.successSingle(details, "Violation details retrieved successfully");
     }

@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import microservices.moderationservice.common.Constants;
-import microservices.moderationservice.common.model.AbstractBaseDataResponse;
+import com.se.bds.common.enums.*;
+import com.se.bds.common.dto.AbstractBaseDataResponse;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,10 +16,15 @@ import java.util.UUID;
 @SuperBuilder
 public class ViolationAdminItem extends AbstractBaseDataResponse {
     private UUID reporterId;
-    private Constants.ViolationReportedTypeEnum relatedEntityType;
+    private ViolationReportedTypeEnum relatedEntityType;
     private UUID relatedEntityId;
-    private Constants.ViolationTypeEnum violationType;
-    private Constants.ViolationStatusEnum status;
+    private ViolationTypeEnum violationType;
+    private ViolationStatusEnum status;
     private String description;
     private LocalDateTime reportedAt;
+
+    private String reporterName;
+    private String reporterAvatarUrl;
+    private String reportedName;
+    private String reportedAvatarUrl;
 }

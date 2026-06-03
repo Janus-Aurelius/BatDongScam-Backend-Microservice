@@ -35,6 +35,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/refresh",
                                 "/users/validate",
+                                "/users/*/status",
                                 "/api/users/*/fcm-token"
                         ).permitAll()
                         .anyRequest().authenticated()

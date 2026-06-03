@@ -5,17 +5,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import microservices.moderationservice.common.Constants;
+import com.se.bds.common.enums.*;
 
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateViolationRequest {
     @NotNull(message = "Status is required")
-    private Constants.ViolationStatusEnum status;
+    private ViolationStatusEnum status;
 
     @Size(max = 2000, message = "Resolution notes cannot exceed 2000 characters")
     private String resolutionNotes;
 
-    private Constants.PenaltyAppliedEnum penaltyApplied;
+    private PenaltyAppliedEnum penaltyApplied;
 }
