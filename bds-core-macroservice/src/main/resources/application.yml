@@ -9,13 +9,6 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
   datasource:
     # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
@@ -33,6 +26,13 @@ eureka:
         format_sql: true
         # This tells Hibernate to automatically create schemas if they don't exist
         hbm2ddl.create_namespaces: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
 
 # Modulith allows us to log events passing between modules
 logging:

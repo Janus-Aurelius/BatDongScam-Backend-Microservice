@@ -1,0 +1,368 @@
+version: '3.8'
+
+networks:
+  bds-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  maven_cache:
+
+services:
+  # ----------------------------------------------------------------------------
+  # Infrastructure Services
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: bds-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD:-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - bds-network
+
+  mongodb:
+    image: mongo:6-jammy
+    container_name: bds-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bds-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: bds-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bds-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: bds-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - bds-network
+
+  # ----------------------------------------------------------------------------
+  # Maven Compilation Builder (Builds libraries and microservice JARs in order)
+  # ----------------------------------------------------------------------------
+  builder:
+    image: maven:3.9-eclipse-temurin-21-jammy
+    container_name: bds-maven-builder
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+    command: mvn clean package -DskipTests
+    networks:
+      - bds-network
+
+  # ----------------------------------------------------------------------------
+  # Microservices
+  # ----------------------------------------------------------------------------
+  eureka-server:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-eureka-server
+    ports:
+      - "8761:8761"
+    volumes:
+      - ./bds-eureka-server/target:/app
+    working_dir: /app
+    environment:
+      EUREKA_HOSTNAME: eureka-server
+    entrypoint: ["java", "-jar", "bds-eureka-server-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+    networks:
+      - bds-network
+
+  api-gateway:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-api-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./bds-api-gateway/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8080
+      EUREKA_URI: ${EUREKA_URI}
+      APP_SECRET: ${APP_SECRET}
+    entrypoint: ["java", "-jar", "bds-api-gateway-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+    networks:
+      - bds-network
+
+  core-macroservice:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-core-macroservice
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./bds-core-macroservice/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8081
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      EUREKA_URI: ${EUREKA_URI}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      PAYWAY_SERVICE_URL: ${PAYWAY_SERVICE_URL}
+      PAYWAY_API_KEY: ${PAYWAY_API_KEY}
+      PAYWAY_MERCHANT_ID: ${PAYWAY_MERCHANT_ID}
+      PAYWAY_VERIFY_KEY: ${PAYWAY_VERIFY_KEY}
+      PAYWAY_WEBHOOK_BASE_URL: ${PAYWAY_WEBHOOK_BASE_URL}
+      PAYWAY_RETURN_URL: ${PAYWAY_RETURN_URL}
+      CLOUD_NAME: ${CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      IAM_SERVICE_URL: http://iam-service:8084
+    entrypoint: ["java", "-jar", "bds-core-macroservice-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
+
+  search-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-search-service
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./bds-search-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8082
+      EUREKA_URI: ${EUREKA_URI}
+      MONGODB_URI: ${MONGODB_URI}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+    entrypoint: ["java", "-jar", "bds-search-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      mongodb:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
+
+  notification-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-notification-service
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./bds-notification-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8083
+      EUREKA_URI: ${EUREKA_URI}
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST}
+      POSTGRESQL_EXTERNAL_PORT: ${POSTGRESQL_EXTERNAL_PORT}
+      POSTGRESQL_DB: ${POSTGRESQL_DB:-bds}
+      POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED}
+      FIREBASE_APP_NAME: ${FIREBASE_APP_NAME}
+      FIREBASE_CREDENTIALS_FILE: ${FIREBASE_CREDENTIALS_FILE}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+    entrypoint: ["java", "-jar", "bds-notification-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
+
+  iam-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-iam-service
+    ports:
+      - "8084:8084"
+    volumes:
+      - ./bds-iam-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8084
+      APP_NAME: iam-service
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST}
+      POSTGRESQL_EXTERNAL_PORT: ${POSTGRESQL_EXTERNAL_PORT}
+      POSTGRESQL_DB: bds-iam-service-db
+      POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      EUREKA_URI: ${EUREKA_URI}
+      APP_SECRET: ${APP_SECRET}
+      APP_JWT_TOKEN_EXPIRES_IN: ${APP_JWT_TOKEN_EXPIRES_IN}
+      APP_JWT_REFRESH_TOKEN_EXPIRES_IN: ${APP_JWT_REFRESH_TOKEN_EXPIRES_IN}
+      CLOUD_NAME: ${CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    entrypoint: ["java", "-jar", "bds-iam-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+    networks:
+      - bds-network
+
+  appointment-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-appointment-service
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./bds-appointment-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8085
+      APP_NAME: appointment-service
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST}
+      POSTGRESQL_EXTERNAL_PORT: ${POSTGRESQL_EXTERNAL_PORT}
+      POSTGRESQL_DB: bds-appointment-service-db
+      POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      EUREKA_URI: ${EUREKA_URI}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+    entrypoint: ["java", "-jar", "bds-appointment-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
+
+  financial-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-financial-service
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./bds-financial-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8086
+      SPRING_APPLICATION_NAME: financial-service
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      EUREKA_URI: ${EUREKA_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PAYWAY_SERVICE_URL: ${PAYWAY_SERVICE_URL}
+      PAYWAY_API_KEY: ${PAYWAY_API_KEY}
+      PAYWAY_WEBHOOK_BASE_URL: ${PAYWAY_WEBHOOK_BASE_URL}
+      PAYWAY_RETURN_URL: ${PAYWAY_RETURN_URL}
+      PAYWAY_VERIFY_KEY: ${PAYWAY_VERIFY_KEY}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      PAYPAL_BASE_URL: ${PAYPAL_BASE_URL}
+      PAYPAL_RETURN_URL: ${PAYPAL_RETURN_URL}
+      PAYPAL_CANCEL_URL: ${PAYPAL_CANCEL_URL}
+      PAYPAL_BRAND_NAME: ${PAYPAL_BRAND_NAME}
+    entrypoint: ["java", "-jar", "bds-financial-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
+
+  moderation-service:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: bds-moderation-service
+    ports:
+      - "8087:8087"
+    volumes:
+      - ./bds-moderation-service/target:/app
+    working_dir: /app
+    environment:
+      SERVER_PORT: 8087
+      APP_NAME: moderation-service
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST}
+      POSTGRESQL_EXTERNAL_PORT: ${POSTGRESQL_EXTERNAL_PORT}
+      POSTGRESQL_DB: bds-moderation-service-db
+      POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      MONGODB_URI: ${MONGODB_URI}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      EUREKA_URI: ${EUREKA_URI}
+      CLOUD_NAME: ${CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    entrypoint: ["java", "-jar", "bds-moderation-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      mongodb:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - bds-network
