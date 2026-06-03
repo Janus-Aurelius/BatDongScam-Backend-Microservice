@@ -16,10 +16,17 @@
 	<description>Parent POM forBatDongSan Platform</description>
 
 	<modules>
-    <module>bds-core-macroservice</module>
 		<module>bds-common</module>
+		<module>bds-core-macroservice</module>
 		<module>bds-financial-service</module>
 		<module>bds-iam-service</module>
+		<module>bds-api-gateway</module>
+		<module>bds-appointment-service</module>
+		<module>bds-moderation-service</module>
+		<module>bds-notification-service</module>
+		<module>bds-search-service</module>
+		<module>bds-eureka-server</module>
+		<module>bds-spring-security-starter</module>
 	</modules>
 
 	<url/>

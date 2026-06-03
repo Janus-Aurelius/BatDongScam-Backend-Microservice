@@ -46,7 +46,7 @@ public class JwtTokenProvider {
     }
 
     public String getUserIdFromToken(String token) {
-        return parseToken(token).getBody().getSubject();
+        return parseToken(token).getPayload().getSubject();
     }
 
     public boolean validateToken(String token) {
@@ -92,21 +92,21 @@ public class JwtTokenProvider {
 
     private String buildToken(String subject, Long expiresIn) {
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiresIn))
-                .signWith(signingKey(), SignatureAlgorithm.HS256)
+                .subject(subject)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiresIn))
+                .signWith(signingKey())
                 .compact();
     }
 
     private Jws<Claims> parseToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(signingKey())
+        return Jwts.parser()
+                .verifyWith(signingKey())
                 .build()
-                .parseClaimsJws(token);
+                .parseSignedClaims(token);
     }
 
-    private Key signingKey() {
+    private javax.crypto.SecretKey signingKey() {
         return Keys.hmacShaKeyFor(appSecret.getBytes());
     }
 }

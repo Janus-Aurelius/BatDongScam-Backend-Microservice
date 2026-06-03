@@ -1,14 +1,14 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8086}
 
 spring:
   application:
-    name: ${SPRING_APPLICATION_NAME}
+    name: ${SPRING_APPLICATION_NAME:financial-service}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bds-financial-service-db}?options=-c%20timezone=UTC
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -20,21 +20,28 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION}
+  secret: ${JWT_SECRET:BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
+  expiration: ${JWT_EXPIRATION:10800000}
 
 payway:
-  service-url: ${PAYWAY_SERVICE_URL}
-  api-key: ${PAYWAY_API_KEY}
-  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL}
-  return-url: ${PAYWAY_RETURN_URL}
-  verify-key: ${PAYWAY_VERIFY_KEY}
+  service-url: ${PAYWAY_SERVICE_URL:http://localhost:3000}
+  api-key: ${PAYWAY_API_KEY:default-key}
+  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL:http://localhost:8080}
+  return-url: ${PAYWAY_RETURN_URL:http://localhost:3000/return}
+  verify-key: ${PAYWAY_VERIFY_KEY:default-verify-key}
 
 paypal:
-  client-id: ${PAYPAL_CLIENT_ID}
-  client-secret: ${PAYPAL_CLIENT_SECRET}
+  client-id: ${PAYPAL_CLIENT_ID:default-id}
+  client-secret: ${PAYPAL_CLIENT_SECRET:default-secret}
   base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
-  return-url: ${PAYPAL_RETURN_URL}
-  cancel-url: ${PAYPAL_CANCEL_URL}
+  return-url: ${PAYPAL_RETURN_URL:http://localhost:8086/api/payments/paypal/return}
+  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8086/api/payments/paypal/cancel}
   brand-name: ${PAYPAL_BRAND_NAME:BDS Platform}

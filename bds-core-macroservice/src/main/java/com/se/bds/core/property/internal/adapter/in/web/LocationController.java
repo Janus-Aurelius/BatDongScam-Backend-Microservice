@@ -18,6 +18,36 @@ import java.util.UUID;
 public class LocationController {
     private final LocationUseCase locationUseCase;
 
+    @GetMapping("/api/internal/locations/cities/ids")
+    public ResponseEntity<List<UUID>> getAllCityIds() {
+        return ResponseEntity.ok(
+                locationUseCase.getAllCities().stream()
+                        .map(City::getId)
+                        .toList()
+        );
+    }
+
+    @GetMapping("/api/internal/locations/districts/ids")
+    public ResponseEntity<List<UUID>> getAllDistrictIds() {
+        return ResponseEntity.ok(
+                locationUseCase.getAllCities().stream()
+                        .flatMap(c -> locationUseCase.getDistrictsByCityId(c.getId()).stream())
+                        .map(District::getId)
+                        .toList()
+        );
+    }
+
+    @GetMapping("/api/internal/locations/wards/ids")
+    public ResponseEntity<List<UUID>> getAllWardIds() {
+        return ResponseEntity.ok(
+                locationUseCase.getAllCities().stream()
+                        .flatMap(c -> locationUseCase.getDistrictsByCityId(c.getId()).stream())
+                        .flatMap(d -> locationUseCase.getWardsByDistrictId(d.getId()).stream())
+                        .map(Ward::getId)
+                        .toList()
+        );
+    }
+
     @GetMapping("/public/locations/cities")
     public ResponseEntity<List<City>> getAllCities() {
         return ResponseEntity.ok(locationUseCase.getAllCities());

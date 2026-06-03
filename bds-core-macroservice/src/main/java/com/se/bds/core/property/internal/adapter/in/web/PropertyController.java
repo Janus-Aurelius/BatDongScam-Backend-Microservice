@@ -209,4 +209,8 @@ public class PropertyController {
         return ResponseEntity.ok(propertyUseCase.verifyPropertyDocument(documentId, command));
     }
 
+    @GetMapping("/api/internal/property-types/ids")
+    public ResponseEntity<List<UUID>> getAllAvailablePropertyTypeIds() {
+        return ResponseEntity.ok(propertyUseCase.getAllAvailablePropertyTypeIds());
+    }
 }

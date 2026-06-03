@@ -1,23 +1,23 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8084}
 
 spring:
   application:
-    name: ${APP_NAME}
+    name: ${APP_NAME:iam-service}
   security:
     user:
       name: admin
       password: 123456
 
   datasource:
-    url: jdbc:postgresql://${POSTGRESQL_HOST}:${POSTGRESQL_EXTERNAL_PORT}/${POSTGRESQL_DB}
-    username: ${POSTGRESQL_USER}
-    password: ${POSTGRESQL_PASSWORD}
+    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_EXTERNAL_PORT:5432}/${POSTGRESQL_DB:bds-iam-service-db}?options=-c%20timezone=UTC
+    username: ${POSTGRESQL_USER:postgres}
+    password: ${POSTGRESQL_PASSWORD:123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: ${DB_DDL_AUTO}
+      ddl-auto: ${DB_DDL_AUTO:update}
     show-sql: true
     properties:
       hibernate:
@@ -30,6 +30,13 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
 logging:
   level:
     org.hibernate.SQL: DEBUG
@@ -37,14 +44,14 @@ logging:
     com.se100.iam: DEBUG
 
 app:
-  secret: ${APP_SECRET}
+  secret: ${APP_SECRET:BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
   jwt:
     token:
-      expires-in: ${APP_JWT_TOKEN_EXPIRES_IN}
+      expires-in: ${APP_JWT_TOKEN_EXPIRES_IN:10800000}
     refresh-token:
-      expires-in: ${APP_JWT_REFRESH_TOKEN_EXPIRES_IN}
+      expires-in: ${APP_JWT_REFRESH_TOKEN_EXPIRES_IN:86400000}
 
 cloudinary:
-  cloud-name: ${CLOUD_NAME}
-  api-key: ${CLOUDINARY_API_KEY}
-  api-secret: ${CLOUDINARY_API_SECRET}
+  cloud-name: ${CLOUD_NAME:default}
+  api-key: ${CLOUDINARY_API_KEY:default}
+  api-secret: ${CLOUDINARY_API_SECRET:default}
