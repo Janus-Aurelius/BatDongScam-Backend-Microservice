@@ -1,6 +1,6 @@
 package com.se361.financial_service.controllers;
 
-import com.se361.financial_service.dtos.responses.SingleResponse;
+import com.se.bds.common.dto.ApiResponse;
 import com.se361.financial_service.gateway.payway.PaywayWebhookHandler;
 import com.se361.financial_service.gateway.payway.PaywayWebhookSignatureVerifier;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/webhooks/payway")
 @RequiredArgsConstructor
 @Slf4j
-public class PaywayWebhookController extends AbstractBaseController {
+public class PaywayWebhookController {
 
     private static final String SIGNATURE_PREFIX = "sha256=";
 
@@ -27,13 +27,14 @@ public class PaywayWebhookController extends AbstractBaseController {
     private final PaywayWebhookHandler paywayWebhookHandler;
 
     @PostMapping
-    public ResponseEntity<SingleResponse<Void>> handle(
+    public ResponseEntity<ApiResponse<Void>> handle(
             @RequestHeader(name = "X-Signature", required = false) String signature,
             @RequestBody String rawBody
     ) {
         if (StringUtils.hasText(verifyKey)) {
             if (!StringUtils.hasText(signature)) {
-                return responseFactory.sendSingle(null, "Missing X-Signature header", HttpStatus.UNAUTHORIZED);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Missing X-Signature header"));
             }
 
             String normalizedSig = signature.startsWith(SIGNATURE_PREFIX)
@@ -44,7 +45,8 @@ public class PaywayWebhookController extends AbstractBaseController {
 
             if (!PaywayWebhookSignatureVerifier.verify(verifyKey, rawBytes, normalizedSig)) {
                 log.warn("Rejected Payway webhook: invalid signature");
-                return responseFactory.sendSingle(null, "Invalid signature", HttpStatus.UNAUTHORIZED);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid signature"));
             }
         }
 
@@ -55,7 +57,7 @@ public class PaywayWebhookController extends AbstractBaseController {
             paywayWebhookHandler.handlePaymentEvent(rawBody);
         }
 
-        return responseFactory.successSingle(null, "Webhook accepted");
+        return ResponseEntity.ok(new ApiResponse<>(true, "Webhook accepted", null));
     }
 
 }

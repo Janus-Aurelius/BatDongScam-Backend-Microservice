@@ -1,8 +1,8 @@
 package com.se100.bds.notificationservice.controllers;
 
 import com.se100.bds.notificationservice.dtos.requests.CreateNotificationRequest;
-import com.se100.bds.notificationservice.dtos.responses.PageResponse;
-import com.se100.bds.notificationservice.dtos.responses.SingleResponse;
+import com.se.bds.common.dto.ApiResponse;
+import com.se.bds.common.dto.PagedData;
 import com.se100.bds.notificationservice.dtos.responses.notification.NotificationDetails;
 import com.se100.bds.notificationservice.dtos.responses.notification.NotificationItem;
 import com.se100.bds.notificationservice.services.NotificationService;
@@ -32,7 +32,7 @@ public class NotificationController {
 
     @GetMapping
     @Operation(summary = "Get my notifications")
-    public ResponseEntity<PageResponse<NotificationItem>> getMyNotifications(
+    public ResponseEntity<ApiResponse<PagedData<NotificationItem>>> getMyNotifications(
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @Parameter(description = "Page number (1-based)")
             @RequestParam(defaultValue = "1") int page,
@@ -49,60 +49,44 @@ public class NotificationController {
 
         Page<NotificationItem> notifications = notificationService.getMyNotifications(currentUserId, pageable);
 
-        PageResponse<NotificationItem> response = PageResponse.<NotificationItem>builder()
-                .statusCode(200)
-                .message("Notifications retrieved successfully")
-                .data(notifications.getContent())
-                .paging(new PageResponse.PagingResponse(
-                        notifications.getNumber(),
-                        notifications.getSize(),
-                        notifications.getTotalElements(),
-                        notifications.getTotalPages()
-                ))
+        PagedData<NotificationItem> pagedData = PagedData.<NotificationItem>builder()
+                .content(notifications.getContent())
+                .pageNumber(notifications.getNumber())
+                .pageSize(notifications.getSize())
+                .totalElements(notifications.getTotalElements())
+                .totalPages(notifications.getTotalPages())
                 .build();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(pagedData));
     }
 
     @GetMapping("/{notificationId}")
     @Operation(summary = "Get notification details")
-    public ResponseEntity<SingleResponse<NotificationDetails>> getNotificationDetails(
+    public ResponseEntity<ApiResponse<NotificationDetails>> getNotificationDetails(
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @Parameter(description = "Notification ID", required = true)
             @PathVariable UUID notificationId
     ) {
         UUID currentUserId = parseUserId(userIdHeader);
         NotificationDetails details = notificationService.getNotificationDetailsById(currentUserId, notificationId);
-        return ResponseEntity.ok(
-                SingleResponse.<NotificationDetails>builder()
-                        .statusCode(200)
-                        .message("Notification details retrieved successfully")
-                        .data(details)
-                        .build()
-        );
+        return ResponseEntity.ok(ApiResponse.success(details));
     }
 
     @PatchMapping("/{notificationId}/read")
     @Operation(summary = "Mark notification as read")
-    public ResponseEntity<SingleResponse<NotificationDetails>> markAsRead(
+    public ResponseEntity<ApiResponse<NotificationDetails>> markAsRead(
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @Parameter(description = "Notification ID", required = true)
             @PathVariable UUID notificationId
     ) {
         UUID currentUserId = parseUserId(userIdHeader);
         NotificationDetails details = notificationService.markAsRead(currentUserId, notificationId);
-        return ResponseEntity.ok(
-                SingleResponse.<NotificationDetails>builder()
-                        .statusCode(200)
-                        .message("Notification marked as read successfully")
-                        .data(details)
-                        .build()
-        );
+        return ResponseEntity.ok(ApiResponse.success(details));
     }
 
     @PostMapping
     @Operation(summary = "Create a notification (internal API)")
-    public ResponseEntity<SingleResponse<String>> createNotification(
+    public ResponseEntity<ApiResponse<Void>> createNotification(
             @RequestBody CreateNotificationRequest request
     ) {
         notificationService.createNotification(
@@ -115,13 +99,7 @@ public class NotificationController {
                 request.getRelatedEntityId(),
                 request.getImgUrl()
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                SingleResponse.<String>builder()
-                        .statusCode(201)
-                        .message("Notification created successfully")
-                        .data(null)
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(null));
     }
 
     private UUID parseUserId(String userIdHeader) {

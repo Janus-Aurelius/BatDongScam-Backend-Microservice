@@ -42,7 +42,15 @@ public class JwtTokenProvider {
     }
 
     public String generateRefresh(String userId) {
-        return buildToken(userId, refreshTokenExpiresIn);
+        return generateRefresh(userId, false);
+    }
+
+    public String generateRefresh(String userId, Boolean rememberMe) {
+        long expiresIn = refreshTokenExpiresIn;
+        if (rememberMe != null && rememberMe) {
+            expiresIn *= 30;
+        }
+        return buildToken(userId, expiresIn);
     }
 
     public String getUserIdFromToken(String token) {

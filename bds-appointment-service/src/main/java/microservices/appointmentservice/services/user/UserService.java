@@ -10,7 +10,6 @@ import microservices.appointmentservice.dtos.responses.user.meprofile.MeResponse
 import microservices.appointmentservice.dtos.responses.user.otherprofile.UserProfileResponse;
 import microservices.appointmentservice.entities.user.SaleAgent;
 import microservices.appointmentservice.entities.user.User;
-import microservices.appointmentservice.securities.JwtUserDetails;
 import microservices.appointmentservice.utils.Constants;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
@@ -46,9 +45,7 @@ public interface UserService {
 
     UUID getUserId();
 
-    UserDetails loadUserById(String id);
 
-    JwtUserDetails getPrincipal(Authentication authentication);
 
     Page<User> findAll(Pageable pageable);
 
@@ -60,7 +57,7 @@ public interface UserService {
 
     User findByEmail(String email);
 
-    UserDetails loadUserByEmail(String email);
+
 
     UserProfileResponse<?> getUserProfileById(UUID id);
 

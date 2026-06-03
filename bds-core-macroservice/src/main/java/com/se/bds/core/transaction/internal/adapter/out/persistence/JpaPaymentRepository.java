@@ -1,6 +1,8 @@
 package com.se.bds.core.transaction.internal.adapter.out.persistence;
 
 import com.se.bds.core.transaction.internal.domain.model.Payment;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,8 +29,8 @@ public interface JpaPaymentRepository extends JpaRepository<Payment, UUID> {
     AND (:propertyId IS NULL OR p.propertyId = :propertyId)
     """)
     org.springframework.data.domain.Page<Payment> searchPayments(
-            @Param("paymentTypes") List<com.se.bds.core.transaction.internal.domain.model.PaymentType> paymentTypes,
-            @Param("statuses") List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            @Param("paymentTypes") List<PaymentType> paymentTypes,
+            @Param("statuses") List<PaymentStatus> statuses,
             @Param("payerId") UUID payerId,
             @Param("contractId") UUID contractId,
             @Param("propertyId") UUID propertyId,
@@ -42,7 +44,7 @@ public interface JpaPaymentRepository extends JpaRepository<Payment, UUID> {
     """)
     org.springframework.data.domain.Page<Payment> searchPaymentsByPayer(
             @Param("payerId") UUID payerId,
-            @Param("statuses") List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            @Param("statuses") List<PaymentStatus> statuses,
             org.springframework.data.domain.Pageable pageable
     );
 }

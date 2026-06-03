@@ -1,7 +1,8 @@
 package com.se100.bds.notificationservice.dtos.responses.notification;
 
-import com.se100.bds.notificationservice.dtos.responses.AbstractBaseDataResponse;
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se.bds.common.dto.AbstractBaseDataResponse;
+import com.se.bds.common.enums.NotificationTypeEnum;
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -13,11 +14,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NotificationDetails extends AbstractBaseDataResponse {
-    private Constants.NotificationTypeEnum type;
+    private NotificationTypeEnum type;
     private String title;
     private boolean isRead;
     private String message;
-    private Constants.RelatedEntityTypeEnum relatedEntityType;
+    private RelatedEntityTypeEnum relatedEntityType;
     private String relatedEntityId;
     private String imgUrl;
     private LocalDateTime readAt;

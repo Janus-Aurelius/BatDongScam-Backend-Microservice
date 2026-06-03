@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

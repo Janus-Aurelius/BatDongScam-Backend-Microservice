@@ -1,6 +1,6 @@
 package microservices.appointmentservice.dtos.responses.notification;
 
-import microservices.appointmentservice.dtos.responses.AbstractBaseDataResponse;
+import com.se.bds.common.dto.AbstractBaseDataResponse;
 import microservices.appointmentservice.utils.Constants;
 import lombok.*;
 import lombok.experimental.SuperBuilder;

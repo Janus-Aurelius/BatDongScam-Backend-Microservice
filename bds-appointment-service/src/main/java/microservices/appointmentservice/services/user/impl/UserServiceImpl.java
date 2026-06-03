@@ -12,7 +12,6 @@ import microservices.appointmentservice.entities.user.SaleAgent;
 import microservices.appointmentservice.entities.user.User;
 import microservices.appointmentservice.exceptions.NotFoundException;
 import microservices.appointmentservice.repositories.UserRepository;
-import microservices.appointmentservice.securities.JwtUserDetails;
 import microservices.appointmentservice.services.user.UserService;
 import microservices.appointmentservice.utils.Constants;
 import lombok.RequiredArgsConstructor;
@@ -51,37 +50,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public UUID getUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return null;
+        if (auth == null) return null;
         Object principal = auth.getPrincipal();
-        if (principal instanceof JwtUserDetails jwtUserDetails) {
+        if (principal instanceof String userIdStr) {
             try {
-                return UUID.fromString(jwtUserDetails.getId());
+                return UUID.fromString(userIdStr);
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid UUID in JWT principal: {}", jwtUserDetails.getId());
+                log.warn("Invalid UUID in principal string: {}", userIdStr);
                 return null;
             }
         }
         return null;
     }
 
-    @Override
-    public UserDetails loadUserById(String id) {
-        User user = userRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
-        return JwtUserDetails.create(user);
-    }
 
-    @Override
-    public UserDetails loadUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        return JwtUserDetails.create(user);
-    }
-
-    @Override
-    public JwtUserDetails getPrincipal(Authentication authentication) {
-        return (JwtUserDetails) authentication.getPrincipal();
-    }
 
     @Override
     public @NotNull User findById(UUID id) {

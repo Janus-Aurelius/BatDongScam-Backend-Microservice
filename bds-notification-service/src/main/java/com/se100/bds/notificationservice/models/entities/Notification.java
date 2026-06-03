@@ -1,6 +1,8 @@
 package com.se100.bds.notificationservice.models.entities;
 
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se.bds.common.enums.NotificationTypeEnum;
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
+import com.se.bds.common.enums.NotificationStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,7 +31,7 @@ public class Notification extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private Constants.NotificationTypeEnum type;
+    private NotificationTypeEnum type;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -39,14 +41,14 @@ public class Notification extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "related_entity_type")
-    private Constants.RelatedEntityTypeEnum relatedEntityType;
+    private RelatedEntityTypeEnum relatedEntityType;
 
     @Column(name = "related_entity_id", length = 100)
     private String relatedEntityId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "delivery_status")
-    private Constants.NotificationStatusEnum deliveryStatus;
+    private NotificationStatusEnum deliveryStatus;
 
     @Column(name = "is_read")
     private Boolean isRead;

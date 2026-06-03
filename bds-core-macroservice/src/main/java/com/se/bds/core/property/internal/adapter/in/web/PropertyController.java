@@ -98,13 +98,14 @@ public class PropertyController {
             @RequestParam(required = false) Integer floors,
             @RequestParam(required = false) String transactionType,
             @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) Boolean topK,
             Pageable pageable
             )
     {
         SearchPropertyCommand command = new SearchPropertyCommand(
                 cityIds, districtIds, wardIds, propertyTypeIds, ownerId, agentId,
                 minPrice, maxPrice, minArea, maxArea, rooms, bathrooms, bedrooms, floors,
-                transactionType, statuses
+                transactionType, statuses, topK
         );
         return ResponseEntity.ok(propertyUseCase.searchProperties(command, pageable));
     }
@@ -212,5 +213,10 @@ public class PropertyController {
     @GetMapping("/api/internal/property-types/ids")
     public ResponseEntity<List<UUID>> getAllAvailablePropertyTypeIds() {
         return ResponseEntity.ok(propertyUseCase.getAllAvailablePropertyTypeIds());
+    }
+
+    @GetMapping("/api/internal/properties/{propertyId}/location-info")
+    public ResponseEntity<PropertyUseCase.PropertyLocationInfo> getPropertyLocationInfo(@PathVariable UUID propertyId) {
+        return ResponseEntity.ok(propertyUseCase.getPropertyLocationInfo(propertyId));
     }
 }

@@ -1,7 +1,7 @@
 package com.se361.financial_service.exceptions;
 
-import com.se361.financial_service.dtos.responses.error.DetailedErrorResponse;
-import com.se361.financial_service.dtos.responses.error.ErrorResponse;
+import com.se.bds.common.dto.ApiResponse;
+import com.se.bds.common.exception.BusinessException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.persistence.EntityNotFoundException;
@@ -38,20 +38,30 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class AppExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
+        log.error("BusinessException: code={}, message={}", e.getCode(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(e.getMessage()));
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed: " + e.getMethod());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error("Method not allowed: " + e.getMethod()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException e) {
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.BAD_REQUEST, "Malformed JSON request: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Malformed JSON request: " + e.getMessage()));
     }
 
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<ErrorResponse> handleBindException(BindException e) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleBindException(BindException e) {
         log.error(e.toString(), e.getMessage());
         Map<String, String> errors = new HashMap<>();
         e.getBindingResult().getAllErrors().forEach(error -> {
@@ -59,7 +69,8 @@ public class AppExceptionHandler {
             String message = error.getDefaultMessage();
             errors.put(fieldName, message);
         });
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, "Validation error", errors);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ApiResponse<>(false, "Validation error", errors));
     }
 
     @ExceptionHandler({
@@ -77,15 +88,17 @@ public class AppExceptionHandler {
             EntityNotFoundException.class,
             MalformedJwtException.class
     })
-    public ResponseEntity<ErrorResponse> handleBadRequest(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.BAD_REQUEST, e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
     }
 
     @ExceptionHandler({NotFoundException.class, NoResourceFoundException.class})
-    public ResponseEntity<ErrorResponse> handleNotFound(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleNotFound(Exception e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.NOT_FOUND, e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     @ExceptionHandler({
@@ -93,54 +106,37 @@ public class AppExceptionHandler {
             BadCredentialsException.class,
             AuthenticationCredentialsNotFoundException.class
     })
-    public ResponseEntity<ErrorResponse> handleUnauthorized(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(Exception e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.UNAUTHORIZED, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<ErrorResponse> handleExpiredJwt(ExpiredJwtException e) {
+    public ResponseEntity<ApiResponse<Void>> handleExpiredJwt(ExpiredJwtException e) {
         log.error("JWT expired: {}", e.getMessage());
-        return build(HttpStatus.UNAUTHORIZED, "Access token expired. Please refresh your token.");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Access token expired. Please refresh your token."));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.FORBIDDEN, e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException e) {
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException e) {
         log.error(e.toString(), e.getMessage());
-        return build(HttpStatus.FORBIDDEN, e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAll(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleAll(Exception e) {
         log.error("Unhandled exception: {}", ExceptionUtils.getStackTrace(e));
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error: " + e.getMessage());
-    }
-
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, Map<String, String> errors) {
-        if (!errors.isEmpty()) {
-            return ResponseEntity.status(status).body(
-                    DetailedErrorResponse.builder()
-                            .statusCode(status.value())
-                            .message(message)
-                            .items(errors)
-                            .build()
-            );
-        }
-        return ResponseEntity.status(status).body(
-                ErrorResponse.builder()
-                        .statusCode(status.value())
-                        .message(message)
-                        .build()
-        );
-    }
-
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message) {
-        return build(status, message, new HashMap<>());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Internal server error: " + e.getMessage()));
     }
 }

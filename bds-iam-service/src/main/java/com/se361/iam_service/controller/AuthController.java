@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    //private final UserService userService;
+    private final com.se361.iam_service.service.UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword()));
+        return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword(), request.getRememberMe()));
     }
 
     @PostMapping("/register")
@@ -34,7 +34,7 @@ public class AuthController {
                 role == Constants.RoleEnum.SALESAGENT) {
             return ResponseEntity.badRequest().build();
         }
-        //userService.register(request);
+        userService.register(request);
         return ResponseEntity.ok().build();
     }
 

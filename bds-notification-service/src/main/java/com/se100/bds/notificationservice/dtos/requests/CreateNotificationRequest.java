@@ -1,6 +1,7 @@
 package com.se100.bds.notificationservice.dtos.requests;
 
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se.bds.common.enums.NotificationTypeEnum;
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,10 +14,10 @@ import java.util.UUID;
 public class CreateNotificationRequest {
     private UUID recipientId;
     private String fcmToken;
-    private Constants.NotificationTypeEnum type;
+    private NotificationTypeEnum type;
     private String title;
     private String message;
-    private Constants.RelatedEntityTypeEnum relatedEntityType;
+    private RelatedEntityTypeEnum relatedEntityType;
     private String relatedEntityId;
     private String imgUrl;
 }

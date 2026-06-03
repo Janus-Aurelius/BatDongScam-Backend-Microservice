@@ -23,7 +23,7 @@ public class UserValidationAdapter implements UserValidationPort {
 
     private final RestTemplate restTemplate;
 
-    @Value("${iam.service-url:http://localhost:8081}")
+    @Value("${iam.service-url:http://localhost:8084}")
     private String iamServiceUrl;
 
     @Override

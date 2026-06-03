@@ -1,7 +1,8 @@
 package com.se361.financial_service.repositories;
 
 import com.se361.financial_service.entities.Payment;
-import com.se361.financial_service.utils.Constants;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,16 +18,16 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>, JpaSpec
 
     Page<Payment> findByPayerId(UUID payerId, Pageable pageable);
 
-    Page<Payment> findByPayerIdAndStatusIn(UUID payerId, List<Constants.PaymentStatus> statuses, Pageable pageable);
+    Page<Payment> findByPayerIdAndStatusIn(UUID payerId, List<PaymentStatus> statuses, Pageable pageable);
 
     Page<Payment> findByPropertyId(UUID propertyId, Pageable pageable);
 
     Page<Payment> findByContractId(UUID contractId, Pageable pageable);
 
-    List<Payment> findByContractIdAndPaymentType(UUID contractId, Constants.PaymentType paymentType);
+    List<Payment> findByContractIdAndPaymentType(UUID contractId, PaymentType paymentType);
 
     Optional<Payment> findByPayosPaymentId(String payosPaymentId);
 
-    boolean existsByContractIdAndPaymentType(UUID contractId, Constants.PaymentType paymentType);
+    boolean existsByContractIdAndPaymentType(UUID contractId, PaymentType paymentType);
 
 }

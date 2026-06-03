@@ -1,6 +1,7 @@
 package com.se.bds.core.shared.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.se.bds.common.event.PropertySearchedEvent;
 import com.se.bds.core.property.api.event.*;
 import com.se.bds.core.shared.event.ContractStatusChangedEvent;
 import com.se.bds.core.shared.event.PaymentCompletedEvent;
@@ -23,6 +24,11 @@ public class KafkaEventBridge {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+
+    @org.springframework.context.event.EventListener
+    public void handlePropertySearched(PropertySearchedEvent event) {
+        publish("property-searched", event.propertyId() != null ? event.propertyId().toString() : "global", event);
+    }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePropertyCreated(PropertyCreatedIntegrationEvent event) {

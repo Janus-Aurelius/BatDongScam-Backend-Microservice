@@ -1,4 +1,4 @@
-package microservices.appointmentservice.data.domains;
+package microservices.appointmentservice.data;
 
 import microservices.appointmentservice.data.util.TimeGenerator;
 import microservices.appointmentservice.entities.appointment.Appointment;
@@ -102,8 +102,8 @@ public class AppointmentDummyData {
 
             Appointment appointment = Appointment.builder()
                     .property(property)
-                    .customer(customer)
-                    .agent(agent)
+                    .customerId(customer.getId())
+                    .agentId(agent != null ? agent.getId() : null)
                     .requestedDate(requestedDate)
                     .confirmedDate(confirmedDate)
                     .status(status)

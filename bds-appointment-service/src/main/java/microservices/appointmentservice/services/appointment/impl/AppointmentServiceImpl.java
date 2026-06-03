@@ -13,10 +13,12 @@ import microservices.appointmentservice.mappers.AppointmentMapper;
 import microservices.appointmentservice.entities.AbstractBaseEntity;
 import microservices.appointmentservice.entities.appointment.Appointment;
 import microservices.appointmentservice.entities.document.IdentificationDocument;
+import microservices.appointmentservice.entities.location.Ward;
 import microservices.appointmentservice.entities.property.Media;
 import microservices.appointmentservice.entities.property.Property;
 import microservices.appointmentservice.entities.user.Customer;
 import microservices.appointmentservice.entities.user.SaleAgent;
+import microservices.appointmentservice.entities.user.PropertyOwner;
 import microservices.appointmentservice.entities.user.User;
 import microservices.appointmentservice.schemas.ranking.IndividualSalesAgentPerformanceCareer;
 import microservices.appointmentservice.schemas.ranking.IndividualSalesAgentPerformanceMonth;
@@ -24,6 +26,8 @@ import microservices.appointmentservice.repositories.AppointmentRepository;
 import microservices.appointmentservice.repositories.PropertyRepository;
 import microservices.appointmentservice.repositories.CustomerRepository;
 import microservices.appointmentservice.repositories.SaleAgentRepository;
+import microservices.appointmentservice.repositories.PropertyOwnerRepository;
+import microservices.appointmentservice.repositories.WardRepository;
 import microservices.appointmentservice.services.appointment.AppointmentService;
 import microservices.appointmentservice.services.notification.NotificationService;
 import microservices.appointmentservice.services.ranking.RankingService;
@@ -62,6 +66,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final RankingService rankingService;
     private final AppointmentMapper appointmentMapper;
     private final NotificationService notificationService;
+    private final PropertyOwnerRepository propertyOwnerRepository;
+    private final WardRepository wardRepository;
 
     @Override
     @Transactional
@@ -111,7 +117,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         // Check if customer already has a pending appointment for this property
-        List<Appointment> existingAppointments = appointmentRepository.findAllByPropertyAndCustomer(property, customer);
+        List<Appointment> existingAppointments = appointmentRepository.findAllByPropertyAndCustomerId(property, customer.getId());
         boolean hasPendingAppointment = existingAppointments.stream()
                 .anyMatch(a -> a.getStatus() == Constants.AppointmentStatusEnum.PENDING ||
                                a.getStatus() == Constants.AppointmentStatusEnum.CONFIRMED);
@@ -129,13 +135,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Create the appointment
         Appointment.AppointmentBuilder appointmentBuilder = Appointment.builder()
             .property(property)
-            .customer(customer)
+            .customerId(customer.getId())
             .requestedDate(request.getRequestedDate())
             .customerRequirements(request.getCustomerRequirements())
             .status(assignedAgent != null ? Constants.AppointmentStatusEnum.CONFIRMED : Constants.AppointmentStatusEnum.PENDING);
         
         if (assignedAgent != null) {
-            appointmentBuilder.agent(assignedAgent)
+            appointmentBuilder.agentId(assignedAgent.getId())
                 .confirmedDate(LocalDateTime.now());
         }
         
@@ -155,8 +161,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         String imgUrl = property.getMediaList().isEmpty() ? null : property.getMediaList().get(0).getFilePath();
 
         // Notify property owner
+        User ownerUser = userService.findById(property.getOwnerId());
         notificationService.createNotification(
-            property.getOwner().getUser(),
+            ownerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_BOOKED,
             "New Viewing Appointment",
             String.format("Customer %s has booked a viewing for your property: %s", customerName, propertyTitle),
@@ -197,10 +204,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new NotFoundException("Appointment not found: " + appointmentId));
 
         // Verify ownership - only the customer who booked, assigned agent, or admin can cancel
-        boolean isCustomer = appointment.getCustomer() != null && 
-                             appointment.getCustomer().getId().equals(currentUser.getId());
-        boolean isAgent = appointment.getAgent() != null && 
-                          appointment.getAgent().getId().equals(currentUser.getId());
+        boolean isCustomer = appointment.getCustomerId().equals(currentUser.getId());
+        boolean isAgent = appointment.getAgentId() != null && 
+                          appointment.getAgentId().equals(currentUser.getId());
         boolean isAdmin = currentUser.getRole() == Constants.RoleEnum.ADMIN;
 
         if (!isCustomer && !isAgent && !isAdmin) {
@@ -226,11 +232,11 @@ public class AppointmentServiceImpl implements AppointmentService {
                 appointmentId, currentUser.getId(), currentUser.getRole());
 
         // Track cancellation for ranking penalties (admin-triggered cancellations intentionally bypass ranking changes)
-        if (isAgent && appointment.getAgent() != null) {
-            rankingService.agentAction(appointment.getAgent().getId(), Constants.AgentActionEnum.APPOINTMENT_CANCELLED, null);
+        if (isAgent && appointment.getAgentId() != null) {
+            rankingService.agentAction(appointment.getAgentId(), Constants.AgentActionEnum.APPOINTMENT_CANCELLED, null);
         }
-        if (isCustomer && appointment.getCustomer() != null) {
-            rankingService.customerAction(appointment.getCustomer().getId(), Constants.CustomerActionEnum.VIEWING_CANCELLED, null);
+        if (isCustomer) {
+            rankingService.customerAction(appointment.getCustomerId(), Constants.CustomerActionEnum.VIEWING_CANCELLED, null);
         }
 
         // Send cancellation notifications
@@ -240,8 +246,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                         appointment.getProperty().getMediaList().get(0).getFilePath();
 
         // Notify customer
+        User customerUser = userService.findById(appointment.getCustomerId());
         notificationService.createNotification(
-            appointment.getCustomer().getUser(),
+            customerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
             "Appointment Cancelled",
             String.format("Your viewing appointment for %s has been cancelled.%s", propertyTitle, reasonText),
@@ -251,8 +258,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         // Notify property owner
+        User ownerUser = userService.findById(appointment.getProperty().getOwnerId());
         notificationService.createNotification(
-            appointment.getProperty().getOwner().getUser(),
+            ownerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
             "Appointment Cancelled",
             String.format("The viewing appointment for your property %s has been cancelled.%s", propertyTitle, reasonText),
@@ -262,9 +270,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         // Notify agent if assigned
-        if (appointment.getAgent() != null) {
+        if (appointment.getAgentId() != null) {
+            User agentUser = userService.findById(appointment.getAgentId());
             notificationService.createNotification(
-                appointment.getAgent().getUser(),
+                agentUser,
                 Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
                 "Appointment Cancelled",
                 String.format("The viewing appointment for property %s has been cancelled.%s", propertyTitle, reasonText),
@@ -288,11 +297,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new NotFoundException("Appointment not found: " + appointmentId));
 
-        boolean isCustomer = appointment.getCustomer() != null &&
-                appointment.getCustomer().getId().equals(currentUser.getId());
+        boolean isCustomer = appointment.getCustomerId().equals(currentUser.getId());
         boolean isAdmin = currentUser.getRole() == Constants.RoleEnum.ADMIN;
-        boolean isAgent = appointment.getAgent() != null &&
-                appointment.getAgent().getId().equals(currentUser.getId());
+        boolean isAgent = appointment.getAgentId() != null &&
+                appointment.getAgentId().equals(currentUser.getId());
 
         if (!isCustomer && !isAdmin && !isAgent) {
             throw new IllegalStateException("You are not authorized to complete this appointment");
@@ -313,12 +321,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setStatus(Constants.AppointmentStatusEnum.COMPLETED);
         appointmentRepository.save(appointment);
 
-        if (appointment.getAgent() != null) {
-            rankingService.agentAction(appointment.getAgent().getId(), Constants.AgentActionEnum.APPOINTMENT_COMPLETED, null);
+        if (appointment.getAgentId() != null) {
+            rankingService.agentAction(appointment.getAgentId(), Constants.AgentActionEnum.APPOINTMENT_COMPLETED, null);
         }
-        if (appointment.getCustomer() != null) {
-            rankingService.customerAction(appointment.getCustomer().getId(), Constants.CustomerActionEnum.VIEWING_ATTENDED, null);
-        }
+        rankingService.customerAction(appointment.getCustomerId(), Constants.CustomerActionEnum.VIEWING_ATTENDED, null);
 
         // Send completion notifications
         String propertyTitle = appointment.getProperty().getTitle();
@@ -326,9 +332,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                         appointment.getProperty().getMediaList().get(0).getFilePath();
 
         // Notify customer
-        assert appointment.getCustomer() != null;
+        User customerUser = userService.findById(appointment.getCustomerId());
         notificationService.createNotification(
-            appointment.getCustomer().getUser(),
+            customerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
             "Appointment Completed",
             String.format("Your viewing appointment for %s has been completed. Please rate your experience!", propertyTitle),
@@ -338,8 +344,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         // Notify property owner
+        User ownerUser = userService.findById(appointment.getProperty().getOwnerId());
         notificationService.createNotification(
-            appointment.getProperty().getOwner().getUser(),
+            ownerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
             "Appointment Completed",
             String.format("The viewing appointment for your property %s has been completed.", propertyTitle),
@@ -349,9 +356,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         // Notify agent if assigned
-        if (appointment.getAgent() != null) {
+        if (appointment.getAgentId() != null) {
+            User agentUser = userService.findById(appointment.getAgentId());
             notificationService.createNotification(
-                appointment.getAgent().getUser(),
+                agentUser,
                 Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
                 "Appointment Completed",
                 String.format("The viewing appointment for property %s has been completed.", propertyTitle),
@@ -369,9 +377,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         User me = userService.getUser();
         List<Appointment> appointments;
         if (statusEnum == null) {
-            appointments = appointmentRepository.findAllByCustomer_Id(me.getId());
+            appointments = appointmentRepository.findAllByCustomerId(me.getId());
         } else {
-            appointments = appointmentRepository.findAllByStatusAndCustomer_Id(statusEnum, me.getId());
+            appointments = appointmentRepository.findAllByStatusAndCustomerId(statusEnum, me.getId());
         }
 
         List<ViewingCardDto> viewingCardDtos = appointments.stream().filter(appointment -> {
@@ -391,8 +399,18 @@ public class AppointmentServiceImpl implements AppointmentService {
         .map(appointment -> {
 
             String thumbnailUrl = appointment.getProperty().getMediaList().get(0).getFilePath();
-            String districtName = appointment.getProperty().getWard().getDistrict().getDistrictName();
-            String cityName = appointment.getProperty().getWard().getDistrict().getCity().getCityName();
+            String districtName = null;
+            String cityName = null;
+            UUID wardId = appointment.getProperty().getWardId();
+            if (wardId != null) {
+                Ward ward = wardRepository.findById(wardId).orElse(null);
+                if (ward != null && ward.getDistrict() != null) {
+                    districtName = ward.getDistrict().getDistrictName();
+                    if (ward.getDistrict().getCity() != null) {
+                        cityName = ward.getDistrict().getCity().getCityName();
+                    }
+                }
+            }
 
             ViewingCardDto viewingCardDto = appointmentMapper.mapTo(appointment, ViewingCardDto.class);
 
@@ -430,27 +448,31 @@ public class AppointmentServiceImpl implements AppointmentService {
         viewingDetailsCustomer.setAttachedDocuments(documentList);
         viewingDetailsCustomer.setFullAddress(fullAddress);
 
+        PropertyOwner propertyOwner = propertyOwnerRepository.findById(appointment.getProperty().getOwnerId())
+                .orElseThrow(() -> new NotFoundException("Property owner not found with id: " + appointment.getProperty().getOwnerId()));
         String ownerTier = rankingService.getCurrentTier(
-                appointment.getProperty().getOwner().getId(),
+                propertyOwner.getId(),
                 Constants.RoleEnum.PROPERTY_OWNER
         );
         PropertyOwnerSimpleCard ownerCard = appointmentMapper.buildOwnerCard(
-                appointment.getProperty().getOwner(),
+                propertyOwner,
                 ownerTier
         );
         viewingDetailsCustomer.setPropertyOwner(ownerCard);
 
-        if (appointment.getAgent() != null) {
+        if (appointment.getAgentId() != null) {
+            SaleAgent agent = saleAgentRepository.findById(appointment.getAgentId())
+                    .orElseThrow(() -> new NotFoundException("Agent not found with id: " + appointment.getAgentId()));
             IndividualSalesAgentPerformanceMonth agentRanking = rankingService.getSaleAgentCurrentMonth(
-                    appointment.getAgent().getId()
+                    agent.getId()
             );
 
             IndividualSalesAgentPerformanceCareer agentRankingCareer = rankingService.getSaleAgentCareer(
-                    appointment.getAgent().getId()
+                    agent.getId()
             );
 
             SalesAgentSimpleCard agentCard = appointmentMapper.buildAgentCard(
-                    appointment.getAgent(),
+                    agent,
                     agentRanking.getPerformanceTier().getValue(),
                     agentRankingCareer.getAvgRating().doubleValue(),
                     agentRankingCareer.getTotalRates()
@@ -556,15 +578,15 @@ public class AppointmentServiceImpl implements AppointmentService {
 
                     // Get customer tier
                     String customerTier = rankingService.getCurrentTier(
-                            appointment.getCustomer().getId(),
+                            appointment.getCustomerId(),
                             Constants.RoleEnum.CUSTOMER
                     );
 
                     // Get sales agent tier (null if no agent assigned)
                     String agentTier = null;
-                    if (appointment.getAgent() != null) {
+                    if (appointment.getAgentId() != null) {
                         agentTier = rankingService.getSaleAgentCurrentMonth(
-                                appointment.getAgent().getId()
+                                appointment.getAgentId()
                         ).getPerformanceTier().getValue();
                     }
 
@@ -591,36 +613,41 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // Build customer card with tier
         String customerTier = rankingService.getCurrentTier(
-                appointment.getCustomer().getId(),
+                appointment.getCustomerId(),
                 Constants.RoleEnum.CUSTOMER
         );
+        User customerUser = userService.findById(appointment.getCustomerId());
         ViewingDetailsAdmin.UserSimpleCard customerCard = appointmentMapper.buildUserSimpleCard(
-                appointment.getCustomer().getUser(),
+                customerUser,
                 customerTier
         );
         viewingDetails.setCustomer(customerCard);
 
         // Build property owner card with tier
+        PropertyOwner propertyOwner = propertyOwnerRepository.findById(appointment.getProperty().getOwnerId())
+                .orElseThrow(() -> new NotFoundException("Property owner not found with id: " + appointment.getProperty().getOwnerId()));
         String ownerTier = rankingService.getCurrentTier(
-                appointment.getProperty().getOwner().getId(),
+                propertyOwner.getId(),
                 Constants.RoleEnum.PROPERTY_OWNER
         );
         ViewingDetailsAdmin.UserSimpleCard ownerCard = appointmentMapper.buildUserSimpleCard(
-                appointment.getProperty().getOwner().getUser(),
+                propertyOwner.getUser(),
                 ownerTier
         );
         viewingDetails.setPropertyOwner(ownerCard);
 
         // Build sales agent card with tier and rating (only if agent is assigned)
-        if (appointment.getAgent() != null) {
+        if (appointment.getAgentId() != null) {
+            SaleAgent agent = saleAgentRepository.findById(appointment.getAgentId())
+                    .orElseThrow(() -> new NotFoundException("Agent not found with id: " + appointment.getAgentId()));
             IndividualSalesAgentPerformanceMonth agentRanking = rankingService.getSaleAgentCurrentMonth(
-                    appointment.getAgent().getId()
+                    agent.getId()
             );
             IndividualSalesAgentPerformanceCareer agentRankingCareer = rankingService.getSaleAgentCareer(
-                    appointment.getAgent().getId()
+                    agent.getId()
             );
             ViewingDetailsAdmin.SalesAgentSimpleCard agentCard = appointmentMapper.buildSalesAgentSimpleCard(
-                    appointment.getAgent().getUser(),
+                    agent.getUser(),
                     agentRanking.getPerformanceTier().getValue(),
                     agentRankingCareer.getAvgRating().doubleValue(),
                     agentRankingCareer.getTotalRates()
@@ -648,10 +675,10 @@ public class AppointmentServiceImpl implements AppointmentService {
         List<Appointment> appointments;
         if (statusEnums != null && !statusEnums.isEmpty())
             appointments = appointmentRepository
-                    .findAllByCustomer_IdInAndStatusInAndAgent_Id(customerIds, statusEnums, userService.getUserId());
+                    .findAllByCustomerIdInAndStatusInAndAgentId(customerIds, statusEnums, userService.getUserId());
         else
             appointments = appointmentRepository
-                    .findAllByCustomer_IdInAndAgent_Id(customerIds, userService.getUserId());
+                    .findAllByCustomerIdInAndAgentId(customerIds, userService.getUserId());
 
         List<Appointment> finalAppointments = new ArrayList<>();
 
@@ -678,13 +705,13 @@ public class AppointmentServiceImpl implements AppointmentService {
 
                     // Get customer tier
                     String customerTier = rankingService.getCurrentTier(
-                            appointment.getCustomer().getId(),
+                            appointment.getCustomerId(),
                             Constants.RoleEnum.CUSTOMER
                     );
 
                     String agentTier = null;
-                    if (appointment.getAgent() != null) {
-                        agentTier = rankingService.getSaleAgentCurrentMonth(appointment.getAgent().getId())
+                    if (appointment.getAgentId() != null) {
+                        agentTier = rankingService.getSaleAgentCurrentMonth(appointment.getAgentId())
                                                     .getPerformanceTier()
                                                     .getValue();
                     }
@@ -701,7 +728,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public int countByAgentId(UUID agentId) {
-        Long count = appointmentRepository.countByAgent_Id(agentId);
+        Long count = appointmentRepository.countByAgentId(agentId);
         return count != null ? count.intValue() : 0;
     }
 
@@ -711,8 +738,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Appointment not found with id: " + appointmentId));
 
-        if (appointment.getAgent() != null) {
-            appointment.setAgent(null);
+        if (appointment.getAgentId() != null) {
+            appointment.setAgentId(null);
             appointment.setStatus(Constants.AppointmentStatusEnum.PENDING);
             appointment.setConfirmedDate(null);
             appointmentRepository.save(appointment);
@@ -738,9 +765,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (validateAssignAgent(agentId, appointmentId, agentUser, appointment)) return;
 
         // Remove old agent if exists and assign new agent
-        if (appointment.getAgent() != null) {
+        if (appointment.getAgentId() != null) {
             log.info("Replacing agent {} with {} for appointment: {}",
-                    appointment.getAgent().getId(), agentId, appointmentId);
+                    appointment.getAgentId(), agentId, appointmentId);
         }
 
         if (appointment.getStatus() == Constants.AppointmentStatusEnum.PENDING) {
@@ -748,14 +775,14 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointment.setConfirmedDate(LocalDateTime.now());
         }
 
-        appointment.setAgent(agentUser.getSaleAgent());
+        appointment.setAgentId(agentId);
         appointmentRepository.save(appointment);
         log.info("Assigned agent {} to appointment: {}", agentId, appointmentId);
 
         // Send assignment notifications
         String propertyTitle = appointment.getProperty().getTitle();
-        String customerName = appointment.getCustomer().getUser().getFirstName() + " " +
-                              appointment.getCustomer().getUser().getLastName();
+        User customerUser = userService.findById(appointment.getCustomerId());
+        String customerName = customerUser.getFirstName() + " " + customerUser.getLastName();
         String imgUrl = appointment.getProperty().getMediaList().isEmpty() ? null :
                         appointment.getProperty().getMediaList().get(0).getFilePath();
 
@@ -773,7 +800,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // Notify customer
         String agentName = agentUser.getFirstName() + " " + agentUser.getLastName();
         notificationService.createNotification(
-            appointment.getCustomer().getUser(),
+            customerUser,
             Constants.NotificationTypeEnum.APPOINTMENT_ASSIGNED,
             "Agent Assigned to Your Appointment",
             String.format("Agent %s has been assigned to your viewing appointment for: %s", agentName, propertyTitle),
@@ -795,7 +822,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         // if the agent is already assigned to the appointment, do nothing
-        if (appointment.getAgent() != null && appointment.getAgent().getId().equals(agentId)) {
+        if (appointment.getAgentId() != null && appointment.getAgentId().equals(agentId)) {
             log.info("Agent {} is already assigned to appointment: {}", agentId, appointmentId);
             return false;
         }
@@ -820,7 +847,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // if the agent is already assigned to another appointment at the same requested date and time, throw exception
         // also ensure that there's a buffer time between appointments
-        List<Appointment> agentAppointments = appointmentRepository.findAllByAgent_Id(agentId);
+        List<Appointment> agentAppointments = appointmentRepository.findAllByAgentId(agentId);
         for (Appointment agentAppointment : agentAppointments) {
             if (agentAppointment.getRequestedDate() == null || appointment.getRequestedDate() == null)
                 continue;
@@ -879,12 +906,10 @@ public class AppointmentServiceImpl implements AppointmentService {
 
             // If status is COMPLETED, track for ranking
             if (status == Constants.AppointmentStatusEnum.COMPLETED) {
-                if (appointment.getAgent() != null) {
-                    rankingService.agentAction(appointment.getAgent().getId(), Constants.AgentActionEnum.APPOINTMENT_COMPLETED, null);
+                if (appointment.getAgentId() != null) {
+                    rankingService.agentAction(appointment.getAgentId(), Constants.AgentActionEnum.APPOINTMENT_COMPLETED, null);
                 }
-                if (appointment.getCustomer() != null) {
-                    rankingService.customerAction(appointment.getCustomer().getId(), Constants.CustomerActionEnum.VIEWING_ATTENDED, null);
-                }
+                rankingService.customerAction(appointment.getCustomerId(), Constants.CustomerActionEnum.VIEWING_ATTENDED, null);
 
                 // Send completion notifications
                 String propertyTitle = appointment.getProperty().getTitle();
@@ -892,9 +917,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                                 appointment.getProperty().getMediaList().get(0).getFilePath();
 
                 // Notify customer
-                assert appointment.getCustomer() != null;
+                User customerUser = userService.findById(appointment.getCustomerId());
                 notificationService.createNotification(
-                    appointment.getCustomer().getUser(),
+                    customerUser,
                     Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
                     "Appointment Completed",
                     String.format("Your viewing appointment for %s has been completed. Please rate your experience!", propertyTitle),
@@ -904,8 +929,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                 );
 
                 // Notify property owner
+                User ownerUser = userService.findById(appointment.getProperty().getOwnerId());
                 notificationService.createNotification(
-                    appointment.getProperty().getOwner().getUser(),
+                    ownerUser,
                     Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
                     "Appointment Completed",
                     String.format("The viewing appointment for your property %s has been completed.", propertyTitle),
@@ -915,9 +941,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 );
 
                 // Notify agent if assigned
-                if (appointment.getAgent() != null) {
+                if (appointment.getAgentId() != null) {
+                    User agentUser = userService.findById(appointment.getAgentId());
                     notificationService.createNotification(
-                        appointment.getAgent().getUser(),
+                        agentUser,
                         Constants.NotificationTypeEnum.APPOINTMENT_COMPLETED,
                         "Appointment Completed",
                         String.format("The viewing appointment for property %s has been completed.", propertyTitle),
@@ -949,8 +976,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                                 appointment.getProperty().getMediaList().get(0).getFilePath();
 
                 // Notify customer
+                User customerUser = userService.findById(appointment.getCustomerId());
                 notificationService.createNotification(
-                    appointment.getCustomer().getUser(),
+                    customerUser,
                     Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
                     "Appointment Cancelled",
                     String.format("Your viewing appointment for %s has been cancelled.%s", propertyTitle, reasonText),
@@ -960,8 +988,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                 );
 
                 // Notify property owner
+                User ownerUser = userService.findById(appointment.getProperty().getOwnerId());
                 notificationService.createNotification(
-                    appointment.getProperty().getOwner().getUser(),
+                    ownerUser,
                     Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
                     "Appointment Cancelled",
                     String.format("The viewing appointment for your property %s has been cancelled.%s", propertyTitle, reasonText),
@@ -971,9 +1000,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 );
 
                 // Notify agent if assigned
-                if (appointment.getAgent() != null) {
+                if (appointment.getAgentId() != null) {
+                    User agentUser = userService.findById(appointment.getAgentId());
                     notificationService.createNotification(
-                        appointment.getAgent().getUser(),
+                        agentUser,
                         Constants.NotificationTypeEnum.APPOINTMENT_CANCELLED,
                         "Appointment Cancelled",
                         String.format("The viewing appointment for property %s has been cancelled.%s", propertyTitle, reasonText),
@@ -1031,8 +1061,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             log.info("Rated appointment {} with rating: {}", appointmentId, rating);
 
             // Track rating action for agent ranking
-            if (rating != null && appointment.getAgent() != null) {
-                rankingService.agentAction(appointment.getAgent().getId(), Constants.AgentActionEnum.RATED, BigDecimal.valueOf(rating));
+            if (rating != null && appointment.getAgentId() != null) {
+                rankingService.agentAction(appointment.getAgentId(), Constants.AgentActionEnum.RATED, BigDecimal.valueOf(rating));
             }
         }
 

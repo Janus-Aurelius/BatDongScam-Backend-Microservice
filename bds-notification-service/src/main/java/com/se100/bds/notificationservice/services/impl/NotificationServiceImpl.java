@@ -1,12 +1,15 @@
 package com.se100.bds.notificationservice.services.impl;
 
-import com.se100.bds.notificationservice.dtos.responses.notification.NotificationDetails;
-import com.se100.bds.notificationservice.dtos.responses.notification.NotificationItem;
+import com.se.bds.common.enums.NotificationTypeEnum;
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
+import com.se.bds.common.enums.NotificationStatusEnum;
+import com.se100.bds.notificationservice.client.IamServiceClient;
+import com.se100.bds.notificationservice.services.NotificationService;
+import com.se100.bds.notificationservice.repositories.NotificationRepository;
 import com.se100.bds.notificationservice.mappers.NotificationMapper;
 import com.se100.bds.notificationservice.models.entities.Notification;
-import com.se100.bds.notificationservice.repositories.NotificationRepository;
-import com.se100.bds.notificationservice.services.NotificationService;
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se100.bds.notificationservice.dtos.responses.notification.NotificationItem;
+import com.se100.bds.notificationservice.dtos.responses.notification.NotificationDetails;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final IamServiceClient iamServiceClient;
 
     @Autowired(required = false)
     @Qualifier("firebasePushService")
@@ -37,15 +41,32 @@ public class NotificationServiceImpl implements NotificationService {
     public void createNotification(
             UUID recipientId,
             String fcmToken,
-            Constants.NotificationTypeEnum type,
+            NotificationTypeEnum type,
             String title,
             String message,
-            Constants.RelatedEntityTypeEnum relatedEntityType,
+            RelatedEntityTypeEnum relatedEntityType,
             String relatedEntityId,
             String imgUrl
     ) {
         if (recipientId == null) {
             return;
+        }
+
+        if (type != null && relatedEntityType != null && relatedEntityId != null) {
+            if (notificationRepository.existsByRecipientIdAndTypeAndRelatedEntityTypeAndRelatedEntityId(recipientId, type, relatedEntityType, relatedEntityId)) {
+                log.info("Notification already exists for recipientId={}, type={}, relatedEntityType={}, relatedEntityId={}. Skipping duplicate creation.",
+                        recipientId, type, relatedEntityType, relatedEntityId);
+                return;
+            }
+        }
+
+        String resolvedToken = fcmToken;
+        if (resolvedToken == null || resolvedToken.isBlank()) {
+            try {
+                resolvedToken = iamServiceClient.getUserFcmToken(recipientId);
+            } catch (Exception e) {
+                log.warn("Failed to retrieve FCM token dynamically for recipient {}: {}", recipientId, e.getMessage());
+            }
         }
 
         Notification notification = Notification.builder()
@@ -55,21 +76,22 @@ public class NotificationServiceImpl implements NotificationService {
                 .message(message)
                 .relatedEntityType(relatedEntityType)
                 .relatedEntityId(relatedEntityId)
-                .deliveryStatus(Constants.NotificationStatusEnum.PENDING)
+                .deliveryStatus(NotificationStatusEnum.PENDING)
                 .isRead(Boolean.FALSE)
                 .imgUrl(imgUrl)
                 .build();
 
         try {
-            if (firebasePushService != null && fcmToken != null && !fcmToken.isBlank()) {
+            if (firebasePushService != null && resolvedToken != null && !resolvedToken.isBlank()) {
                 log.info("Send web push notification for recipient {}", recipientId);
-                firebasePushService.sendPushNotification(fcmToken, title, message, imgUrl);
+                firebasePushService.sendPushNotification(resolvedToken, title, message, imgUrl);
+                notification.setDeliveryStatus(NotificationStatusEnum.SENT);
             } else {
                 log.info("Firebase push disabled or no FCM token, skipping push for recipient {}", recipientId);
             }
         } catch (Exception e) {
             log.error("Error sending web push notification for recipient {}", recipientId, e);
-            notification.setDeliveryStatus(Constants.NotificationStatusEnum.FAILED);
+            notification.setDeliveryStatus(NotificationStatusEnum.FAILED);
         }
 
         notificationRepository.save(notification);

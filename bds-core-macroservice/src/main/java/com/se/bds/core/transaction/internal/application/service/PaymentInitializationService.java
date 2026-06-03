@@ -7,7 +7,7 @@ import com.se.bds.core.transaction.internal.application.port.in.PaymentInitializ
 import com.se.bds.core.transaction.internal.application.port.out.PaymentGatewayPort;
 import com.se.bds.core.transaction.internal.application.port.out.PaymentRepository;
 import com.se.bds.core.transaction.internal.domain.model.Payment;
-import com.se.bds.core.transaction.internal.domain.model.PaymentStatus;
+import com.se.bds.common.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

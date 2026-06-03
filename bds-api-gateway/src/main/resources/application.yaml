@@ -34,7 +34,7 @@ spring:
         - id: financial-service
           uri: lb://financial-service
           predicates:
-            - Path=/api/payments/**, /api/commissions/**
+            - Path=/api/payments/**, /api/commissions/**, /webhooks/**
         # Moderation Service
         - id: moderation-service
           uri: lb://moderation-service

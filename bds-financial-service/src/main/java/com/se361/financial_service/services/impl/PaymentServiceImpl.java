@@ -1,5 +1,9 @@
 package com.se361.financial_service.services.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.se.bds.common.enums.PaymentStatus;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.event.PaymentCompletedEvent;
 import com.se361.financial_service.dtos.requests.CreatePaymentRequest;
 import com.se361.financial_service.dtos.requests.UpdatePaymentStatusRequest;
 import com.se361.financial_service.dtos.responses.PaymentResponse;
@@ -8,16 +12,17 @@ import com.se361.financial_service.exceptions.BadRequestException;
 import com.se361.financial_service.exceptions.NotFoundException;
 import com.se361.financial_service.repositories.PaymentRepository;
 import com.se361.financial_service.services.PaymentService;
-import com.se361.financial_service.utils.Constants;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,12 +35,13 @@ import java.util.UUID;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
-
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
     public PaymentResponse createPayment(CreatePaymentRequest request) {
-        if (request.getPaymentType() != Constants.PaymentType.MONTHLY) {
+        if (request.getPaymentType() != PaymentType.MONTHLY) {
             boolean exists = paymentRepository.existsByContractIdAndPaymentType(
                     request.getContractId(), request.getPaymentType()
             );
@@ -54,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .propertyTitle(request.getPropertyTitle())
                 .contractNumber(request.getContractNumber())
                 .paymentType(request.getPaymentType())
-                .status(Constants.PaymentStatus.PENDING)
+                .status(PaymentStatus.PENDING)
                 .amount(request.getAmount())
                 .dueDate(request.getDueDate())
                 .installmentNumber(request.getInstallmentNumber())
@@ -80,8 +86,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional(readOnly = true)
     public Page<PaymentResponse> getPayments(
             Pageable pageable,
-            List<Constants.PaymentType> paymentTypes,
-            List<Constants.PaymentStatus> statuses,
+            List<PaymentType> paymentTypes,
+            List<PaymentStatus> statuses,
             UUID payerId,
             UUID contractId,
             UUID propertyId,
@@ -98,7 +104,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PaymentResponse> getPaymentsByPayer(UUID payerId, List<Constants.PaymentStatus> statuses, Pageable pageable) {
+    public Page<PaymentResponse> getPaymentsByPayer(UUID payerId, List<PaymentStatus> statuses, Pageable pageable) {
         if (statuses != null && !statuses.isEmpty()) {
             return paymentRepository.findByPayerIdAndStatusIn(payerId, statuses, pageable)
                     .map(this::mapToResponse);
@@ -118,13 +124,13 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new NotFoundException("Payment not found: " + paymentId));
 
-        if (payment.getStatus() == Constants.PaymentStatus.SUCCESS) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
             throw new BadRequestException("Payment already completed");
         }
 
         payment.setStatus(request.getStatus());
 
-        if (request.getStatus() == Constants.PaymentStatus.SUCCESS) {
+        if (request.getStatus() == PaymentStatus.SUCCESS) {
             payment.setPaidTime(LocalDateTime.now());
         }
         if (request.getNotes() != null) {
@@ -137,22 +143,82 @@ public class PaymentServiceImpl implements PaymentService {
         Payment saved = paymentRepository.save(payment);
         log.info("Updated payment {} status to {}", paymentId, request.getStatus());
 
+        if (saved.getStatus() == PaymentStatus.SUCCESS) {
+            publishPaymentCompleted(saved);
+        }
+
         return mapToResponse(saved);
     }
 
     @Override
     @Transactional
     public void handlePayOSWebhook(String rawBody) {
-        // TODO: parse PayOS webhook payload
-        // 1. Parse rawBody to extract payosPaymentId and status
-        // 2. Find payment by payosPaymentId
-        // 3. Update status accordingly
         log.info("Received PayOS webhook: {}", rawBody);
+        try {
+            var node = objectMapper.readTree(rawBody);
+            var dataNode = node.get("data");
+            if (dataNode == null) {
+                log.warn("PayOS webhook payload is missing data object");
+                return;
+            }
+            String payosPaymentId = dataNode.has("paymentLinkId") ? dataNode.get("paymentLinkId").asText() : null;
+            String statusStr = dataNode.has("desc") ? dataNode.get("desc").asText() : null;
+            if (payosPaymentId == null && dataNode.has("orderCode")) {
+                payosPaymentId = dataNode.get("orderCode").asText();
+            }
+
+            if (payosPaymentId == null) {
+                log.warn("PayOS webhook payload does not contain paymentLinkId or orderCode");
+                return;
+            }
+
+            var paymentOpt = paymentRepository.findByPayosPaymentId(payosPaymentId);
+            if (paymentOpt.isPresent()) {
+                var payment = paymentOpt.get();
+                if (payment.getStatus() != PaymentStatus.SUCCESS) {
+                    if ("success".equalsIgnoreCase(statusStr) || "00".equals(statusStr) || "SUCCESS".equalsIgnoreCase(statusStr)) {
+                        payment.setStatus(PaymentStatus.SUCCESS);
+                        payment.setPaidTime(LocalDateTime.now());
+                        Payment saved = paymentRepository.save(payment);
+                        log.info("PayOS webhook: Payment {} marked SUCCESS", payment.getId());
+                        publishPaymentCompleted(saved);
+                    } else {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        paymentRepository.save(payment);
+                        log.info("PayOS webhook: Payment {} marked FAILED", payment.getId());
+                    }
+                }
+            } else {
+                log.warn("Payment not found for PayOS paymentId: {}", payosPaymentId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse/process PayOS webhook payload", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void publishPaymentCompleted(Payment payment) {
+        try {
+            PaymentCompletedEvent completedEvent = new PaymentCompletedEvent(
+                    payment.getId(),
+                    payment.getContractId(),
+                    payment.getPropertyId(),
+                    payment.getPaymentType().name(),
+                    payment.getAmount(),
+                    payment.getPayerId(),
+                    Instant.now()
+            );
+            String payload = objectMapper.writeValueAsString(completedEvent);
+            log.info("[Kafka] Publishing PaymentCompletedEvent to topic=payment-succeeded: {}", payload);
+            kafkaTemplate.send("payment-succeeded", payment.getId().toString(), payload);
+        } catch (Exception e) {
+            log.error("[Kafka] Failed to publish PaymentCompletedEvent for payment={}", payment.getId(), e);
+        }
     }
 
     private Specification<Payment> buildSpec(
-            List<Constants.PaymentType> paymentTypes,
-            List<Constants.PaymentStatus> statuses,
+            List<PaymentType> paymentTypes,
+            List<PaymentStatus> statuses,
             UUID payerId,
             UUID contractId,
             UUID propertyId,
@@ -186,7 +252,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
             if (Boolean.TRUE.equals(overdue)) {
                 predicates.add(cb.lessThan(root.get("dueDate"), LocalDate.now()));
-                predicates.add(cb.notEqual(root.get("status"), Constants.PaymentStatus.SUCCESS));
+                predicates.add(cb.notEqual(root.get("status"), PaymentStatus.SUCCESS));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

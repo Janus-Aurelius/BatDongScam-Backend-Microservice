@@ -1,7 +1,7 @@
 package com.se100.bds.notificationservice.dtos.responses.notification;
 
-import com.se100.bds.notificationservice.dtos.responses.AbstractBaseDataResponse;
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se.bds.common.dto.AbstractBaseDataResponse;
+import com.se.bds.common.enums.NotificationTypeEnum;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NotificationItem extends AbstractBaseDataResponse {
-    private Constants.NotificationTypeEnum type;
+    private NotificationTypeEnum type;
     private String title;
     private boolean isRead;
 }

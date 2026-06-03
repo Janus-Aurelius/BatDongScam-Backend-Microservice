@@ -15,6 +15,8 @@ import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
 import com.se.bds.core.property.internal.application.port.out.MessagePublisherPort;
 import com.se.bds.core.property.internal.domain.model.*;
 import com.se.bds.core.property.internal.domain.model.strategy.FeeCalculationStrategy;
+import com.se.bds.common.event.PropertySearchedEvent;
+import com.se.bds.core.property.internal.adapter.out.client.SearchServiceClient;
 import com.se.bds.core.shared.ids.PropertyId;
 import com.se.bds.core.property.internal.application.port.out.PropertyRepository;
 import com.se.bds.core.property.internal.application.port.out.PropertyTypeRepository;
@@ -53,6 +55,7 @@ class PropertyServiceImpl implements PropertyUseCase {
     private final DocumentTypeRepository documentTypeRepository;
     private final IdentificationDocumentRepository identificationDocumentRepository;
     private final PropertyFileStoragePort fileStoragePort;
+    private final SearchServiceClient searchServiceClient;
 
     @Override
     @Transactional
@@ -295,10 +298,32 @@ class PropertyServiceImpl implements PropertyUseCase {
      */
     @Override
     public Page<Property> searchProperties(SearchPropertyCommand command, Pageable pageable) {
+        List<UUID> propertyIds = null;
+        if (Boolean.TRUE.equals(command.topK())) {
+            try {
+                int year = LocalDateTime.now().getYear();
+                int month = LocalDateTime.now().getMonthValue();
+                com.se.bds.common.dto.ApiResponse<List<UUID>> response = searchServiceClient.getMostSearchedPropertyIds(10, year, month);
+                if (response != null && response.isSuccess() && response.getData() != null) {
+                    propertyIds = response.getData();
+                }
+            } catch (Exception e) {
+                log.error("Failed to fetch top popular properties from search-service", e);
+                propertyIds = List.of();
+            }
+        }
+        
+        eventPublisher.publishEvent(new PropertySearchedEvent(
+                null,
+                "filters",
+                getCurrentUserId(),
+                Instant.now()
+        ));
+
         return propertyRepository.searchWithFilters(
-                command.cityIds(),command.districtIds(),command.wardIds(),command.propertyTypeIds(),
-                command.ownerId(),command.agentId(),command.minPrice(),command.maxPrice(),command.minArea(),
-                command.maxArea(),pageable
+                command.cityIds(), command.districtIds(), command.wardIds(), command.propertyTypeIds(),
+                command.ownerId(), command.agentId(), command.minPrice(), command.maxPrice(), command.minArea(),
+                command.maxArea(), propertyIds, pageable
         );
     }
 
@@ -309,7 +334,14 @@ class PropertyServiceImpl implements PropertyUseCase {
     @Override
     @Cacheable(value = "propertyDetails", key = "#propertyId")
     public Property getPropertyDetail(UUID propertyId) {
-        return getProperty(propertyId);
+        Property property = getProperty(propertyId);
+        eventPublisher.publishEvent(new PropertySearchedEvent(
+                propertyId,
+                null,
+                getCurrentUserId(),
+                Instant.now()
+        ));
+        return property;
     }
 
     /**
@@ -497,6 +529,18 @@ class PropertyServiceImpl implements PropertyUseCase {
     {
         return propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new BusinessException(MSG18.CODE, MSG18.MESSAGE));
+    }
+
+    private UUID getCurrentUserId() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(auth.getName());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private boolean isUserAdmin() {
@@ -729,4 +773,33 @@ class PropertyServiceImpl implements PropertyUseCase {
         }
     }
 
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public PropertyLocationInfo getPropertyLocationInfo(UUID propertyId) {
+        Property property = getProperty(propertyId);
+        UUID cityId = null;
+        UUID districtId = null;
+        UUID wardId = property.getWardId();
+        
+        Ward ward = property.getWard();
+        if (ward != null) {
+            wardId = ward.getId();
+            District district = ward.getDistrict();
+            if (district != null) {
+                districtId = district.getId();
+                City city = district.getCity();
+                if (city != null) {
+                    cityId = city.getId();
+                }
+            }
+        }
+        
+        return new PropertyLocationInfo(
+                property.getId(),
+                cityId,
+                districtId,
+                wardId,
+                property.getPropertyType() != null ? property.getPropertyType().getId() : null
+        );
+    }
 }

@@ -2,7 +2,8 @@ package com.se100.bds.notificationservice.services;
 
 import com.se100.bds.notificationservice.dtos.responses.notification.NotificationDetails;
 import com.se100.bds.notificationservice.dtos.responses.notification.NotificationItem;
-import com.se100.bds.notificationservice.utils.Constants;
+import com.se.bds.common.enums.NotificationTypeEnum;
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,10 +13,10 @@ public interface NotificationService {
     void createNotification(
             UUID recipientId,
             String fcmToken,
-            Constants.NotificationTypeEnum type,
+            NotificationTypeEnum type,
             String title,
             String message,
-            Constants.RelatedEntityTypeEnum relatedEntityType,
+            RelatedEntityTypeEnum relatedEntityType,
             String relatedEntityId,
             String imgUrl
     );

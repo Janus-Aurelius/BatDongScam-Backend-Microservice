@@ -1,8 +1,8 @@
 package com.se.bds.core.transaction.internal.application.port.in;
 
 import com.se.bds.core.transaction.internal.domain.model.Payment;
-import com.se.bds.core.transaction.internal.domain.model.PaymentStatus;
-import com.se.bds.core.transaction.internal.domain.model.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
+import com.se.bds.common.enums.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;

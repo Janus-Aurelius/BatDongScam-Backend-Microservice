@@ -1,5 +1,6 @@
 package com.se100.bds.notificationservice.repositories;
 
+import com.se.bds.common.enums.RelatedEntityTypeEnum;
 import com.se100.bds.notificationservice.models.entities.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,4 +13,5 @@ import java.util.UUID;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID>, JpaSpecificationExecutor<Notification> {
     Page<Notification> findByRecipientIdOrderByCreatedAtDesc(UUID recipientId, Pageable pageable);
+    boolean existsByRecipientIdAndTypeAndRelatedEntityTypeAndRelatedEntityId(UUID recipientId, com.se.bds.common.enums.NotificationTypeEnum type, RelatedEntityTypeEnum relatedEntityType, String relatedEntityId);
 }

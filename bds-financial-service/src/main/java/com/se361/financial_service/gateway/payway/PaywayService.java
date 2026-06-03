@@ -12,6 +12,7 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
@@ -42,12 +43,16 @@ public class PaywayService implements PaymentGatewayService {
         if (c != null) return c;
 
         HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(3))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
 
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(java.time.Duration.ofSeconds(5));
+
         restClient = RestClient.builder()
                 .baseUrl(serviceUrl)
-                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+                .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> {
                     String body = safeReadBody(response);
@@ -59,11 +64,13 @@ public class PaywayService implements PaymentGatewayService {
     }
 
     @Override
+    @CircuitBreaker(name = "paywayCircuitBreaker")
     public CreatePaymentSessionResponse createPaymentSession(CreatePaymentSessionRequest request) {
         return createPaymentSession(request, null);
     }
 
     @Override
+    @CircuitBreaker(name = "paywayCircuitBreaker")
     public CreatePaymentSessionResponse createPaymentSession(CreatePaymentSessionRequest request, String idempotencyKey) {
         validatePaymentRequest(request);
 
@@ -104,6 +111,7 @@ public class PaywayService implements PaymentGatewayService {
     }
 
     @Override
+    @CircuitBreaker(name = "paywayCircuitBreaker")
     public CreatePaymentSessionResponse getPaymentSession(String paymentId) {
         if (!StringUtils.hasText(paymentId)) throw new IllegalArgumentException("paymentId is required");
 
@@ -120,6 +128,7 @@ public class PaywayService implements PaymentGatewayService {
     }
 
     @Override
+    @CircuitBreaker(name = "paywayCircuitBreaker")
     public CreatePayoutSessionResponse createPayoutSession(CreatePayoutSessionRequest request, String idempotencyKey) {
         if (request == null) throw new IllegalArgumentException("request is required");
         if (!StringUtils.hasText(request.getWebhookUrl()) && StringUtils.hasText(webhookBaseUrl)) {
@@ -158,6 +167,7 @@ public class PaywayService implements PaymentGatewayService {
     }
 
     @Override
+    @CircuitBreaker(name = "paywayCircuitBreaker")
     public CreatePayoutSessionResponse getPayoutSession(String payoutId) {
         if (!StringUtils.hasText(payoutId)) throw new IllegalArgumentException("payoutId is required");
 

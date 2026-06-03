@@ -1,6 +1,7 @@
 package com.se361.financial_service.entities;
 
-import com.se361.financial_service.utils.Constants;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,11 +44,11 @@ public class Payment extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_type", nullable = false)
-    private Constants.PaymentType paymentType;
+    private PaymentType paymentType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private Constants.PaymentStatus status;
+    private PaymentStatus status;
 
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;

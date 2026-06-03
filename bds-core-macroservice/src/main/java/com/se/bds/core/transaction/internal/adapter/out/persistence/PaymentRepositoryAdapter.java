@@ -2,6 +2,8 @@ package com.se.bds.core.transaction.internal.adapter.out.persistence;
 
 import com.se.bds.core.transaction.internal.application.port.out.PaymentRepository;
 import com.se.bds.core.transaction.internal.domain.model.Payment;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -47,8 +49,8 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
 
     @Override
     public org.springframework.data.domain.Page<Payment> searchPayments(
-            List<com.se.bds.core.transaction.internal.domain.model.PaymentType> paymentTypes,
-            List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            List<PaymentType> paymentTypes,
+            List<PaymentStatus> statuses,
             UUID payerId,
             UUID contractId,
             UUID propertyId,
@@ -60,7 +62,7 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     @Override
     public org.springframework.data.domain.Page<Payment> searchPaymentsByPayer(
             UUID payerId,
-            List<com.se.bds.core.transaction.internal.domain.model.PaymentStatus> statuses,
+            List<PaymentStatus> statuses,
             org.springframework.data.domain.Pageable pageable
     ) {
         return jpaPaymentRepository.searchPaymentsByPayer(payerId, statuses, pageable);

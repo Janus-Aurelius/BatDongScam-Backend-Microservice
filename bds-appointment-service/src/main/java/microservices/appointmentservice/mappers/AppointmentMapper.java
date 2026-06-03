@@ -7,20 +7,31 @@ import microservices.appointmentservice.dtos.responses.appointment.ViewingListIt
 import microservices.appointmentservice.dtos.responses.user.simple.PropertyOwnerSimpleCard;
 import microservices.appointmentservice.dtos.responses.user.simple.SalesAgentSimpleCard;
 import microservices.appointmentservice.entities.appointment.Appointment;
+import microservices.appointmentservice.entities.location.Ward;
 import microservices.appointmentservice.entities.user.PropertyOwner;
 import microservices.appointmentservice.entities.user.SaleAgent;
 import microservices.appointmentservice.entities.user.User;
+import microservices.appointmentservice.repositories.WardRepository;
+import microservices.appointmentservice.services.user.UserService;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.spi.MappingContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class AppointmentMapper extends BaseMapper {
+
+    private final WardRepository wardRepository;
+    private final UserService userService;
+
     @Autowired
-    public AppointmentMapper(ModelMapper modelMapper) {
+    public AppointmentMapper(ModelMapper modelMapper, WardRepository wardRepository, UserService userService) {
         super(modelMapper);
+        this.wardRepository = wardRepository;
+        this.userService = userService;
     }
 
     @Override
@@ -101,12 +112,16 @@ public class AppointmentMapper extends BaseMapper {
                             dst.setPrice(src.getProperty().getPriceAmount());
                             dst.setArea(src.getProperty().getArea());
 
-                            if (src.getProperty().getWard() != null) {
-                                dst.setWardName(src.getProperty().getWard().getWardName());
-                                if (src.getProperty().getWard().getDistrict() != null) {
-                                    dst.setDistrictName(src.getProperty().getWard().getDistrict().getDistrictName());
-                                    if (src.getProperty().getWard().getDistrict().getCity() != null) {
-                                        dst.setCityName(src.getProperty().getWard().getDistrict().getCity().getCityName());
+                            UUID wardId = src.getProperty().getWardId();
+                            if (wardId != null) {
+                                Ward ward = wardRepository.findById(wardId).orElse(null);
+                                if (ward != null) {
+                                    dst.setWardName(ward.getWardName());
+                                    if (ward.getDistrict() != null) {
+                                        dst.setDistrictName(ward.getDistrict().getDistrictName());
+                                        if (ward.getDistrict().getCity() != null) {
+                                            dst.setCityName(ward.getDistrict().getCity().getCityName());
+                                        }
                                     }
                                 }
                             }
@@ -144,10 +159,15 @@ public class AppointmentMapper extends BaseMapper {
                         dst.setStatus(src.getStatus() != null ? src.getStatus().name() : null);
                         dst.setCustomerRequirements(src.getCustomerRequirements());
 
-                        if (src.getAgent() != null) {
-                            dst.setAgentId(src.getAgent().getId());
-                            if (src.getAgent().getUser() != null) {
-                                dst.setAgentName(src.getAgent().getUser().getFullName());
+                        if (src.getAgentId() != null) {
+                            dst.setAgentId(src.getAgentId());
+                            try {
+                                User agentUser = userService.findById(src.getAgentId());
+                                if (agentUser != null) {
+                                    dst.setAgentName(agentUser.getFullName());
+                                }
+                            } catch (Exception e) {
+                                // Ignore user fetch failures
                             }
                         }
 
@@ -200,8 +220,7 @@ public class AppointmentMapper extends BaseMapper {
     }
 
     /**
-     * I FUCKING SWEAR TO GOD I HAVE NO FUCKING IDEA WHY THIS SHIT WORKS BUT THE MAPPER DOESN'T
-     * THE LAST TIME I USE MAPPER IN THIS SHIT LANGUAGE
+     * Manual mapper to map Appointment to ViewingListItem
      */
     public ViewingListItem mapToViewingListItem(Appointment appointment) {
         ViewingListItem dto = new ViewingListItem();
@@ -220,14 +239,18 @@ public class AppointmentMapper extends BaseMapper {
             dto.setArea(appointment.getProperty().getArea());
 
             // Map location fields
-            if (appointment.getProperty().getWard() != null) {
-                dto.setWardName(appointment.getProperty().getWard().getWardName());
+            UUID wardId = appointment.getProperty().getWardId();
+            if (wardId != null) {
+                Ward ward = wardRepository.findById(wardId).orElse(null);
+                if (ward != null) {
+                    dto.setWardName(ward.getWardName());
 
-                if (appointment.getProperty().getWard().getDistrict() != null) {
-                    dto.setDistrictName(appointment.getProperty().getWard().getDistrict().getDistrictName());
+                    if (ward.getDistrict() != null) {
+                        dto.setDistrictName(ward.getDistrict().getDistrictName());
 
-                    if (appointment.getProperty().getWard().getDistrict().getCity() != null) {
-                        dto.setCityName(appointment.getProperty().getWard().getDistrict().getCity().getCityName());
+                        if (ward.getDistrict().getCity() != null) {
+                            dto.setCityName(ward.getDistrict().getCity().getCityName());
+                        }
                     }
                 }
             }
@@ -247,13 +270,27 @@ public class AppointmentMapper extends BaseMapper {
      * This must be called after the base mapping to populate lazy-loaded relationships
      */
     public void enrichViewingListItem(ViewingListItem dto, Appointment appointment, String customerTier, String agentTier) {
-        if (appointment.getCustomer() != null && appointment.getCustomer().getUser() != null) {
-            dto.setCustomerName(appointment.getCustomer().getUser().getFullName());
+        if (appointment.getCustomerId() != null) {
+            try {
+                User customerUser = userService.findById(appointment.getCustomerId());
+                if (customerUser != null) {
+                    dto.setCustomerName(customerUser.getFullName());
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
         }
         dto.setCustomerTier(customerTier);
 
-        if (appointment.getAgent() != null && appointment.getAgent().getUser() != null) {
-            dto.setSalesAgentName(appointment.getAgent().getUser().getFullName());
+        if (appointment.getAgentId() != null) {
+            try {
+                User agentUser = userService.findById(appointment.getAgentId());
+                if (agentUser != null) {
+                    dto.setSalesAgentName(agentUser.getFullName());
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
         }
         dto.setSalesAgentTier(agentTier);
     }

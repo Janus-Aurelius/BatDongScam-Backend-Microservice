@@ -43,19 +43,20 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
         p.priceAmount,
         p.area,
         po.id,
-        po.user.firstName,
-        po.user.lastName,
+        u.firstName,
+        u.lastName,
         sa.id,
-        sa.user.firstName,
-        sa.user.lastName
+        u2.firstName,
+        u2.lastName
     )
     FROM Property p
-    JOIN Ward w ON p.ward.id = w.id
+    JOIN Ward w ON p.wardId = w.id
     JOIN District d ON w.district.id = d.id
     JOIN City c ON d.city.id = c.id
-    LEFT JOIN PropertyOwner po ON p.owner.id = po.id
-    LEFT JOIN SaleAgent sa ON p.assignedAgent.id = sa.id
-    LEFT JOIN User u ON po.user.id = u.id
+    LEFT JOIN PropertyOwner po ON p.ownerId = po.id
+    LEFT JOIN SaleAgent sa ON p.assignedAgentId = sa.id
+    LEFT JOIN User u ON po.id = u.id
+    LEFT JOIN User u2 ON sa.id = u2.id
     LEFT JOIN Media m ON m.property.id = p.id
     WHERE p.id IN :propertyIds
     GROUP BY
@@ -71,11 +72,11 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
         p.priceAmount,
         p.area,
         po.id,
-        po.user.firstName,
-        po.user.lastName,
+        u.firstName,
+        u.lastName,
         sa.id,
-        sa.user.firstName,
-        sa.user.lastName
+        u2.firstName,
+        u2.lastName
     """)
     Page<PropertyCardProtection> findFavoritePropertyCards(
             Pageable pageable,
@@ -98,19 +99,20 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
         p.priceAmount,
         p.area,
         po.id,
-        po.user.firstName,
-        po.user.lastName,
+        u.firstName,
+        u.lastName,
         sa.id,
-        sa.user.firstName,
-        sa.user.lastName
+        u2.firstName,
+        u2.lastName
     )
     FROM Property p
-    JOIN Ward w ON p.ward.id = w.id
+    JOIN Ward w ON p.wardId = w.id
     JOIN District d ON w.district.id = d.id
     JOIN City c ON d.city.id = c.id
-    LEFT JOIN PropertyOwner po ON p.owner.id = po.id
-    LEFT JOIN SaleAgent sa ON p.assignedAgent.id = sa.id
-    LEFT JOIN User u ON po.user.id = u.id
+    LEFT JOIN PropertyOwner po ON p.ownerId = po.id
+    LEFT JOIN SaleAgent sa ON p.assignedAgentId = sa.id
+    LEFT JOIN User u ON po.id = u.id
+    LEFT JOIN User u2 ON sa.id = u2.id
     LEFT JOIN Media m ON m.property.id = p.id
     WHERE
         (COALESCE(:propertyIds, NULL) IS NULL OR p.id IN :propertyIds)
@@ -145,11 +147,11 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
         p.priceAmount, 
         p.area, 
         po.id,
-        po.user.firstName,
-        po.user.lastName,
+        u.firstName,
+        u.lastName,
         sa.id,
-        sa.user.firstName,
-        sa.user.lastName
+        u2.firstName,
+        u2.lastName
     """)
     Page<PropertyCardProtection> findAllPropertyCardsWithFilter(
             Pageable pageable,
@@ -172,7 +174,6 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
             @Param("balconyOrientation") String balconyOrientation,
             @Param("transactionType") List<String> transactionType,
             @Param("statuses") List<String> statuses
-//            @Param("userId") UUID userId
     );
 
     @Query("""
@@ -224,12 +225,12 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
             p.viewCount AS viewCount,
             p.approvedAt AS approvedAt
         FROM Property p
-        JOIN PropertyOwner po ON p.owner.id = po.id
-        JOIN User u1 ON po.user.id = u1.id
-        LEFT JOIN SaleAgent sa ON p.assignedAgent.id = sa.id
-        LEFT JOIN User u2 ON sa.user.id = u2.id
+        JOIN PropertyOwner po ON p.ownerId = po.id
+        JOIN User u1 ON po.id = u1.id
+        LEFT JOIN SaleAgent sa ON p.assignedAgentId = sa.id
+        LEFT JOIN User u2 ON sa.id = u2.id
         JOIN PropertyType pt ON p.propertyType.id = pt.id
-        JOIN Ward w ON p.ward.id = w.id
+        JOIN Ward w ON p.wardId = w.id
         JOIN District d ON w.district.id = d.id
         JOIN City c ON d.city.id = c.id
         WHERE p.id = :propertyId
@@ -274,9 +275,9 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
     """)
     List<DocumentProjection> findDocumentsByPropertyId(@Param("propertyId") UUID propertyId);
 
-    List<Property> findAllByOwner(PropertyOwner owner);
+    List<Property> findAllByOwnerId(UUID ownerId);
 
-    List<Property> findAllByOwner_IdAndAssignedAgent_Id(UUID ownerId, UUID assignedAgentId);
+    List<Property> findAllByOwnerIdAndAssignedAgentId(UUID ownerId, UUID assignedAgentId);
 
     @Query("""
     SELECT DISTINCT p
@@ -296,57 +297,55 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
     """)
     List<Property> findAllByCustomer_IdAndStatusIn(@Param("customerId") UUID customerId);
 
-    List<Property> findAllByOwner_Id(UUID ownerId);
+    @EntityGraph(attributePaths = {"mediaList", "propertyType"})
+    List<Property> findAllByAssignedAgentId(UUID assignedAgentId);
 
-    @EntityGraph(attributePaths = {"owner", "owner.user", "assignedAgent", "assignedAgent.user", "mediaList", "ward", "ward.district", "ward.district.city", "propertyType"})
-    List<Property> findAllByAssignedAgent_Id(UUID assignedAgentId);
-
-    @EntityGraph(attributePaths = {"owner", "owner.user", "assignedAgent", "assignedAgent.user", "mediaList", "ward", "ward.district", "ward.district.city", "propertyType"})
-    Page<Property> findAllByAssignedAgent_Id(UUID assignedAgentId, Pageable pageable);
+    @EntityGraph(attributePaths = {"mediaList", "propertyType"})
+    Page<Property> findAllByAssignedAgentId(UUID assignedAgentId, Pageable pageable);
 
     @Query("""
     SELECT p
     FROM Property p
-    WHERE p.owner.id = :ownerId
+    WHERE p.ownerId = :ownerId
         AND (COALESCE(:statuses, NULL) IS NULL OR p.status IN :statuses)
     """)
-    List<Property> findAllByOwner_IdAndStatusIn(@Param("ownerId") UUID ownerId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
+    List<Property> findAllByOwnerIdAndStatusIn(@Param("ownerId") UUID ownerId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
 
     @Query("""
     SELECT p
     FROM Property p
-    WHERE p.assignedAgent.id = :assignedAgentId
+    WHERE p.assignedAgentId = :assignedAgentId
         AND (COALESCE(:statuses, NULL) IS NULL OR p.status IN :statuses)
     """)
-    List<Property> findAllByAssignedAgent_IdAndStatusIn(@Param("assignedAgentId") UUID assignedAgentId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
+    List<Property> findAllByAssignedAgentIdAndStatusIn(@Param("assignedAgentId") UUID assignedAgentId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
 
     @Query("""
     SELECT p
     FROM Property p
-    WHERE p.owner.id = :ownerId
-        AND p.assignedAgent.id = :assignedAgentId
+    WHERE p.ownerId = :ownerId
+        AND p.assignedAgentId = :assignedAgentId
         AND (COALESCE(:statuses, NULL) IS NULL OR p.status IN :statuses)
     """)
-    List<Property> findAllByOwner_IdAndAssignedAgent_IdAndStatusIn(@Param("ownerId") UUID ownerId, @Param("assignedAgentId") UUID assignedAgentId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
+    List<Property> findAllByOwnerIdAndAssignedAgentIdAndStatusIn(@Param("ownerId") UUID ownerId, @Param("assignedAgentId") UUID assignedAgentId, @Param("statuses") Collection<Constants.PropertyStatusEnum> statuses);
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.ward.id = :wardId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.wardId = :wardId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
     int countActivePropertiesByWardId(@Param("wardId") UUID wardId);
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.ward.district.id = :districtId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
+    @Query("SELECT COUNT(p) FROM Property p JOIN Ward w ON p.wardId = w.id WHERE w.district.id = :districtId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
     int countActivePropertiesByDistrictId(@Param("districtId") UUID districtId);
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.ward.district.city.id = :cityId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
+    @Query("SELECT COUNT(p) FROM Property p JOIN Ward w ON p.wardId = w.id JOIN District d ON w.district.id = d.id WHERE d.city.id = :cityId AND p.status = microservices.appointmentservice.utils.Constants.PropertyStatusEnum.AVAILABLE")
     int countActivePropertiesByCityId(@Param("cityId") UUID cityId);
 
     @Query("SELECT COUNT(p) FROM Property p WHERE p.propertyType.id = :propertyTypeId")
     int countByPropertyType_Id(@Param("propertyTypeId") UUID propertyTypeId);
 
-    Long countByAssignedAgent_Id(UUID assignedAgentId);
+    Long countByAssignedAgentId(UUID assignedAgentId);
 
-    @EntityGraph(attributePaths = {"owner", "owner.user", "assignedAgent", "assignedAgent.user", "mediaList", "ward", "ward.district", "ward.district.city", "propertyType"})
-    Page<Property> findAllByOwner_IdInAndAssignedAgent_Id(Collection<UUID> ownerIds, UUID assignedAgentId, Pageable pageable);
+    @EntityGraph(attributePaths = {"mediaList", "propertyType"})
+    Page<Property> findAllByOwnerIdInAndAssignedAgentId(Collection<UUID> ownerIds, UUID assignedAgentId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ward.district.city", "propertyType"})
+    @EntityGraph(attributePaths = {"propertyType"})
     Optional<Property> findById(UUID propertyId);
 
     List<Property> findAllByCreatedAtBefore(LocalDateTime createdAtBefore);

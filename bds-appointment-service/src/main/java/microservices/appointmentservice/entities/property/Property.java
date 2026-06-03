@@ -2,12 +2,7 @@ package microservices.appointmentservice.entities.property;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import microservices.appointmentservice.entities.AbstractBaseEntity;
-import microservices.appointmentservice.entities.user.PropertyOwner;
-import microservices.appointmentservice.entities.user.SaleAgent;
-import microservices.appointmentservice.entities.location.Ward;
-import microservices.appointmentservice.entities.contract.Contract;
 import microservices.appointmentservice.entities.document.IdentificationDocument;
-import microservices.appointmentservice.entities.violation.ViolationReport;
 import microservices.appointmentservice.entities.appointment.Appointment;
 import microservices.appointmentservice.utils.Constants;
 import jakarta.persistence.*;
@@ -17,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "properties")
@@ -29,15 +25,12 @@ import java.util.List;
         @AttributeOverride(name = "id", column = @Column(name = "property_id", nullable = false)),
 })
 public class Property extends AbstractBaseEntity {
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    @JsonIgnore
-    private PropertyOwner owner;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_agent_id")
-    @JsonIgnore
-    private SaleAgent assignedAgent;
+    @Column(name = "owner_id", nullable = false)
+    private UUID ownerId;
+
+    @Column(name = "assigned_agent_id")
+    private UUID assignedAgentId;
 
     @Column(name = "service_fee_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal serviceFeeAmount;
@@ -50,10 +43,8 @@ public class Property extends AbstractBaseEntity {
     @JsonIgnore
     private PropertyType propertyType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ward_id", nullable = false)
-    @JsonIgnore
-    private Ward ward;
+    @Column(name = "ward_id", nullable = false)
+    private UUID wardId;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -125,11 +116,6 @@ public class Property extends AbstractBaseEntity {
     @Builder.Default
     @JsonIgnore
     private List<Appointment> appointments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnore
-    private List<Contract> contracts = new ArrayList<>();
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

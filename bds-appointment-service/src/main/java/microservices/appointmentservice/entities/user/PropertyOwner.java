@@ -1,13 +1,10 @@
 package microservices.appointmentservice.entities.user;
 
 import microservices.appointmentservice.entities.AbstractBaseEntity;
-import microservices.appointmentservice.entities.property.Property;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "property_owners")
@@ -28,7 +25,4 @@ public class PropertyOwner extends AbstractBaseEntity {
     @Column(name = "approved_at", nullable = true)
     private LocalDateTime approvedAt;
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Property> properties = new ArrayList<>();
 }

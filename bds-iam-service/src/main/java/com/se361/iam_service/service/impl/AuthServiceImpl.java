@@ -28,7 +28,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public TokenResponse login(String email, String password) {
+    public TokenResponse login(String email, String password, Boolean rememberMe) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
@@ -41,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
                     user.setLastLoginAt(LocalDateTime.now());
                     userRepository.save(user);
                 });
-        return generateTokens(userId);
+        return generateTokens(userId, rememberMe);
     }
 
     @Override
@@ -53,17 +53,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         UUID userId = UUID.fromString(jwtTokenProvider.getUserIdFromToken(token));
-        return generateTokens(userId);
+        return generateTokens(userId, false);
     }
 
     @Override
-    public TokenResponse generateTokens(UUID userId) {
+    public TokenResponse generateTokens(UUID userId, Boolean rememberMe) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
         return TokenResponse.builder()
                 .token(jwtTokenProvider.generateJwt(userId.toString()))
-                .refreshToken(jwtTokenProvider.generateRefresh(userId.toString()))
+                .refreshToken(jwtTokenProvider.generateRefresh(userId.toString(), rememberMe))
                 .userId(userId.toString())
                 .role(user.getRole().name())
                 .build();

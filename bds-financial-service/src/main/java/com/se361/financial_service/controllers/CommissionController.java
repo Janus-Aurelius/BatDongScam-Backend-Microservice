@@ -1,10 +1,10 @@
 package com.se361.financial_service.controllers;
 
+import com.se.bds.common.dto.ApiResponse;
+import com.se.bds.common.dto.PagedData;
 import com.se361.financial_service.dtos.requests.CreateCommissionRequest;
 import com.se361.financial_service.dtos.requests.UpdateCommissionStatusRequest;
 import com.se361.financial_service.dtos.responses.CommissionResponse;
-import com.se361.financial_service.dtos.responses.PageResponse;
-import com.se361.financial_service.dtos.responses.SingleResponse;
 import com.se361.financial_service.securities.SecurityUtils;
 import com.se361.financial_service.services.CommissionService;
 import com.se361.financial_service.utils.Constants;
@@ -24,31 +24,31 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/commissions")
 @RequiredArgsConstructor
-public class CommissionController extends AbstractBaseController {
+public class CommissionController {
 
     private final CommissionService commissionService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SingleResponse<CommissionResponse>> createCommission(
+    public ResponseEntity<ApiResponse<CommissionResponse>> createCommission(
             @Valid @RequestBody CreateCommissionRequest request
     ) {
         CommissionResponse response = commissionService.createCommission(request);
-        return responseFactory.successSingle(response, "Commission created successfully");
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{commissionId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SALESAGENT')")
-    public ResponseEntity<SingleResponse<CommissionResponse>> getCommissionById(
+    public ResponseEntity<ApiResponse<CommissionResponse>> getCommissionById(
             @PathVariable UUID commissionId
     ) {
         CommissionResponse response = commissionService.getCommissionById(commissionId);
-        return responseFactory.successSingle(response, "Commission retrieved successfully");
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PageResponse<CommissionResponse>> getCommissions(
+    public ResponseEntity<ApiResponse<PagedData<CommissionResponse>>> getCommissions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -62,12 +62,12 @@ public class CommissionController extends AbstractBaseController {
         Page<CommissionResponse> commissions = commissionService.getCommissions(
                 pageable, agentId, propertyId, contractId, statuses
         );
-        return responseFactory.successPage(commissions, "Commissions retrieved successfully");
+        return ResponseEntity.ok(ApiResponse.success(toPagedData(commissions)));
     }
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('SALESAGENT')")
-    public ResponseEntity<PageResponse<CommissionResponse>> getMyCommissions(
+    public ResponseEntity<ApiResponse<PagedData<CommissionResponse>>> getMyCommissions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) List<Constants.CommissionStatus> statuses
@@ -77,18 +77,28 @@ public class CommissionController extends AbstractBaseController {
         Page<CommissionResponse> commissions = commissionService.getCommissionsByAgent(
                 currentUserId, statuses, pageable
         );
-        return responseFactory.successPage(commissions, "My commissions retrieved successfully");
+        return ResponseEntity.ok(ApiResponse.success(toPagedData(commissions)));
     }
 
     @PatchMapping("/{commissionId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SingleResponse<CommissionResponse>> updateCommissionStatus(
+    public ResponseEntity<ApiResponse<CommissionResponse>> updateCommissionStatus(
             @PathVariable UUID commissionId,
             @Valid @RequestBody UpdateCommissionStatusRequest request
     ) {
         CommissionResponse response = commissionService.updateCommissionStatus(
                 commissionId, request.getStatus(), request.getNotes()
         );
-        return responseFactory.successSingle(response, "Commission status updated successfully");
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    private <T> PagedData<T> toPagedData(Page<T> page) {
+        return PagedData.<T>builder()
+                .content(page.getContent())
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .build();
     }
 }

@@ -1,6 +1,6 @@
 package microservices.appointmentservice.dtos.responses.appointment;
 
-import microservices.appointmentservice.dtos.responses.AbstractBaseDataResponse;
+import com.se.bds.common.dto.AbstractBaseDataResponse;
 import microservices.appointmentservice.dtos.responses.user.simple.PropertyOwnerSimpleCard;
 import microservices.appointmentservice.dtos.responses.user.simple.SalesAgentSimpleCard;
 import microservices.appointmentservice.utils.Constants;

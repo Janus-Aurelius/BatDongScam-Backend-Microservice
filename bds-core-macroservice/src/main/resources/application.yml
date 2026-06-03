@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: core-macroservice
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 eureka:
   client:
@@ -11,11 +16,6 @@ eureka:
       defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
@@ -57,4 +57,17 @@ encryption:
   key: ${ENCRYPTION_KEY:default-encryption-key-32-chars!!!}
 
 iam:
-  service-url: ${IAM_SERVICE_URL:http://localhost:8081}
+  service-url: ${IAM_SERVICE_URL:http://localhost:8084}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      searchServiceCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+  retry:
+    instances:
+      searchServiceRetry:
+        maxAttempts: 3
+        waitDuration: 2000

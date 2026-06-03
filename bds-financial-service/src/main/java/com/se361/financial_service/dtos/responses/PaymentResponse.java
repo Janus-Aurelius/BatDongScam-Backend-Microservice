@@ -1,6 +1,7 @@
 package com.se361.financial_service.dtos.responses;
 
-import com.se361.financial_service.utils.Constants;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,8 +24,8 @@ public class PaymentResponse {
     private String payerName;
     private String propertyTitle;
     private String contractNumber;
-    private Constants.PaymentType paymentType;
-    private Constants.PaymentStatus status;
+    private PaymentType paymentType;
+    private PaymentStatus status;
     private BigDecimal amount;
     private BigDecimal penaltyAmount;
     private LocalDate dueDate;

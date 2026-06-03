@@ -2,7 +2,6 @@ package microservices.appointmentservice.repositories;
 
 import microservices.appointmentservice.entities.appointment.Appointment;
 import microservices.appointmentservice.entities.property.Property;
-import microservices.appointmentservice.entities.user.Customer;
 import microservices.appointmentservice.utils.Constants;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,34 +21,32 @@ import java.util.UUID;
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID>, JpaSpecificationExecutor<Appointment> {
     Page<Appointment> findAllByStatus(Constants.AppointmentStatusEnum status, Pageable pageable);
 
-    List<Appointment> findAllByPropertyAndCustomer(Property property, Customer customer);
+    List<Appointment> findAllByPropertyAndCustomerId(Property property, UUID customerId);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList"})
-    List<Appointment> findAllByCustomer_Id(UUID customerId);
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
+    List<Appointment> findAllByCustomerId(UUID customerId);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList"})
-    List<Appointment> findAllByStatusAndCustomer_Id(Constants.AppointmentStatusEnum status, UUID customerId);
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
+    List<Appointment> findAllByStatusAndCustomerId(Constants.AppointmentStatusEnum status, UUID customerId);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList", "property.documents", "property.propertyType", "agent", "agent.user", "customer", "customer.user", "property.owner", "property.owner.user"})
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
     Optional<Appointment> findById(UUID id);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList", "property.propertyType", "agent", "agent.user", "customer", "customer.user", "property.owner", "property.owner.user"})
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
     @Query("""
         SELECT a
         FROM Appointment a
         JOIN a.property p
-        JOIN p.ward w
-        JOIN w.district d
-        JOIN d.city c
+        JOIN Ward w ON p.wardId = w.id
+        JOIN District d ON w.district.id = d.id
+        JOIN City c ON d.city.id = c.id
         JOIN p.propertyType pt
-        LEFT JOIN a.agent ag
-        JOIN a.customer cu
         WHERE
             (COALESCE(:propertyName, '') = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :propertyName, '%')))
             AND (COALESCE(:propertyTypeIds, NULL) IS NULL OR pt.id IN :propertyTypeIds)
             AND (COALESCE(:transactionTypeEnums, NULL) IS NULL OR p.transactionType IN :transactionTypeEnums)
-            AND (COALESCE(:agentIds, NULL) IS NULL OR ag.id IN :agentIds)
-            AND (COALESCE(:customerIds, NULL) IS NULL OR cu.id IN :customerIds)
+            AND (COALESCE(:agentIds, NULL) IS NULL OR a.agentId IN :agentIds)
+            AND (COALESCE(:customerIds, NULL) IS NULL OR a.customerId IN :customerIds)
             AND (:minRating IS NULL OR a.rating >= :minRating)
             AND (:maxRating IS NULL OR a.rating <= :maxRating)
             AND (COALESCE(:cityIds, NULL) IS NULL OR c.id IN :cityIds)
@@ -71,13 +68,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
             @Param("statusEnums") List<Constants.AppointmentStatusEnum> statusEnums
     );
 
-    Long countByAgent_Id(UUID agentId);
+    Long countByAgentId(UUID agentId);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList", "property.propertyType", "agent", "agent.user", "customer", "customer.user", "property.owner", "property.owner.user"})
-    List<Appointment> findAllByCustomer_IdInAndStatusInAndAgent_Id(Collection<UUID> customerIds, Collection<Constants.AppointmentStatusEnum> statuses, UUID agentId);
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
+    List<Appointment> findAllByCustomerIdInAndStatusInAndAgentId(Collection<UUID> customerIds, Collection<Constants.AppointmentStatusEnum> statuses, UUID agentId);
 
-    @EntityGraph(attributePaths = {"property", "property.ward", "property.ward.district", "property.ward.district.city", "property.mediaList", "property.propertyType", "agent", "agent.user", "customer", "customer.user", "property.owner", "property.owner.user"})
-    List<Appointment> findAllByCustomer_IdInAndAgent_Id(Collection<UUID> customerIds, UUID agentId);
+    @EntityGraph(attributePaths = {"property", "property.mediaList"})
+    List<Appointment> findAllByCustomerIdInAndAgentId(Collection<UUID> customerIds, UUID agentId);
 
-    List<Appointment> findAllByAgent_Id(UUID agentId);
+    List<Appointment> findAllByAgentId(UUID agentId);
 }

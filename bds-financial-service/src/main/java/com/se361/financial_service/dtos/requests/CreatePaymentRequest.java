@@ -1,6 +1,6 @@
 package com.se361.financial_service.dtos.requests;
 
-import com.se361.financial_service.utils.Constants;
+import com.se.bds.common.enums.PaymentType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class CreatePaymentRequest {
     private String contractNumber;
 
     @NotNull(message = "Payment type is required")
-    private Constants.PaymentType paymentType;
+    private PaymentType paymentType;
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")

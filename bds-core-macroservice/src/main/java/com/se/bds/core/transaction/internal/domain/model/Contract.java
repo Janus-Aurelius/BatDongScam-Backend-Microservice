@@ -1,5 +1,6 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.enums.PaymentStatus;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.core.shared.enums.Role;

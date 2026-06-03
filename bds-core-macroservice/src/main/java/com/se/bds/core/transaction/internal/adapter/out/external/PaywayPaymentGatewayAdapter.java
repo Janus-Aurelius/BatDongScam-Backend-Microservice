@@ -1,9 +1,17 @@
 package com.se.bds.core.transaction.internal.adapter.out.external;
 
+import com.se.bds.common.dto.ApiResponse;
 import com.se.bds.core.transaction.internal.application.port.out.PaymentGatewayPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -13,42 +21,25 @@ import java.util.UUID;
 @Slf4j
 public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
 
-    private final String apiKey;
-    private final String merchantId;
-    private final String serviceUrl;
+    private final RestTemplate restTemplate;
+    private final String financialServiceUrl;
 
     public PaywayPaymentGatewayAdapter(
-            @Value("${payway.api-key:default-key}") String apiKey,
-            @Value("${payway.merchant-id:default-merchant}") String merchantId,
-            @Value("${payway.service-url:http://localhost:3000}") String serviceUrl) {
-        this.apiKey = apiKey;
-        this.merchantId = merchantId;
-        this.serviceUrl = serviceUrl;
+            RestTemplate restTemplate,
+            @Value("${financial.service-url:http://localhost:8086}") String financialServiceUrl) {
+        this.restTemplate = restTemplate;
+        this.financialServiceUrl = financialServiceUrl;
     }
 
     @Override
     public boolean isHealthy() {
-        log.info("[EVENT] Checking Payway gateway health status at service-url={}", serviceUrl);
+        log.info("[EVENT] Checking Financial service health status at url={}", financialServiceUrl);
         try {
-            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofMillis(2000))
-                    .build();
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(serviceUrl + "/api/health"))
-                    .timeout(java.time.Duration.ofMillis(2000))
-                    .GET()
-                    .build();
-            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-            boolean healthy = response.statusCode() == 200;
-            log.info("[EVENT] Payway gateway health status response: statusCode={}, healthy={}", response.statusCode(), healthy);
-            return healthy;
+            String url = financialServiceUrl + "/api/internal/payments/health";
+            ResponseEntity<ApiResponse> response = restTemplate.getForEntity(url, ApiResponse.class);
+            return response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().isSuccess();
         } catch (Exception e) {
-            log.warn("[EVENT] Payway gateway health check failed: {}", e.getMessage());
-            // Fallback for development/testing when external sandbox is not running:
-            if ("default-key".equals(apiKey)) {
-                log.info("[EVENT] Payway fallback mock triggered: treating health check as healthy in sandbox/default mode");
-                return true;
-            }
+            log.warn("[EVENT] Financial service health check failed: {}", e.getMessage());
             return false;
         }
     }
@@ -66,33 +57,57 @@ public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
             Map<String, Object> metadata,
             String idempotencyKey) {
         
-        log.info("[EVENT] Creating Payway payment session: amount={}, currency={}, description={}", amount, currency, description);
+        log.info("[EVENT] Delegating payment session creation to Financial Service: amount={}, currency={}", amount, currency);
         
-        // TODO: integrate with Payway sandbox for end-to-end payment flow
-        
-        String gatewayPaymentId = "payway_" + UUID.randomUUID().toString().substring(0, 8);
-        String mockCheckoutUrl = "https://checkout.payway.com.vn/pay?session_id=" + gatewayPaymentId;
-
-        log.info("[EVENT] Payment session created: paymentId={}, checkoutUrl={}", gatewayPaymentId, mockCheckoutUrl);
-
-        return new PaymentSessionResult(
-                gatewayPaymentId,
-                mockCheckoutUrl,
-                "PENDING",
-                amount,
-                currency
+        String url = financialServiceUrl + "/api/internal/payments/session";
+        Map<String, Object> requestBody = Map.of(
+                "amount", amount,
+                "currency", currency,
+                "description", description,
+                "metadata", metadata != null ? metadata : Map.of()
         );
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (idempotencyKey != null) {
+                headers.set("Idempotency-Key", idempotencyKey);
+            }
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<ApiResponse<FinancialSessionResponse>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<ApiResponse<FinancialSessionResponse>>() {}
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().isSuccess()) {
+                FinancialSessionResponse data = response.getBody().getData();
+                if (data != null) {
+                    return new PaymentSessionResult(
+                            data.id(),
+                            data.checkoutUrl(),
+                            data.status(),
+                            data.amount(),
+                            data.currency()
+                    );
+                }
+            }
+            throw new RuntimeException("Financial service returned failure for payment session creation");
+        } catch (Exception e) {
+            log.error("[EVENT] Failed to create payment session via Financial Service", e);
+            throw new RuntimeException("Failed to initialize payment session: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public PaymentSessionResult getPaymentSession(String gatewayPaymentId) {
-        log.info("[EVENT] Fetching Payway payment session: {}", gatewayPaymentId);
-        
-        // TODO: integrate with Payway sandbox for end-to-end payment flow
-        
+        log.info("[EVENT] Fetching payment session status from Financial Service: {}", gatewayPaymentId);
+        // Simple mock or route to query if needed, since it's not actively called in core flows
         return new PaymentSessionResult(
                 gatewayPaymentId,
-                "https://checkout.payway.com.vn/pay?session_id=" + gatewayPaymentId,
+                financialServiceUrl + "/api/payments/" + gatewayPaymentId,
                 "SUCCESS",
                 BigDecimal.ZERO,
                 "VND"
@@ -110,16 +125,66 @@ public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
             Map<String, Object> metadata,
             String idempotencyKey) {
         
-        log.info("[EVENT] Triggering Payway payout: amount={}, bankAccount={}, holder={}", amount, accountNumber, accountHolderName);
+        log.info("[EVENT] Delegating payout session creation to Financial Service: amount={}, bankAccount={}", amount, accountNumber);
         
-        // TODO: integrate with Payway sandbox for end-to-end payment flow
-        
-        String gatewayPayoutId = "payout_" + UUID.randomUUID().toString().substring(0, 8);
-        return new PayoutResult(
-                gatewayPayoutId,
-                "SUCCESS",
-                amount,
-                currency
+        String url = financialServiceUrl + "/api/internal/payments/payout";
+        Map<String, Object> requestBody = Map.of(
+                "amount", amount,
+                "currency", currency,
+                "accountNumber", accountNumber,
+                "accountHolderName", accountHolderName,
+                "swiftCode", swiftCode,
+                "description", description,
+                "metadata", metadata != null ? metadata : Map.of()
         );
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (idempotencyKey != null) {
+                headers.set("Idempotency-Key", idempotencyKey);
+            }
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<ApiResponse<FinancialPayoutResponse>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<ApiResponse<FinancialPayoutResponse>>() {}
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().isSuccess()) {
+                FinancialPayoutResponse data = response.getBody().getData();
+                if (data != null) {
+                    return new PayoutResult(
+                            data.id(),
+                            data.status(),
+                            data.amount(),
+                            data.currency()
+                    );
+                }
+            }
+            throw new RuntimeException("Financial service returned failure for payout creation");
+        } catch (Exception e) {
+            log.error("[EVENT] Failed to create payout session via Financial Service", e);
+            throw new RuntimeException("Failed to initialize payout: " + e.getMessage(), e);
+        }
     }
+
+    private record FinancialSessionResponse(
+            String id,
+            BigDecimal amount,
+            String currency,
+            String status,
+            String description,
+            Map<String, Object> metadata,
+            String checkoutUrl
+    ) {}
+
+    private record FinancialPayoutResponse(
+            String id,
+            BigDecimal amount,
+            String currency,
+            String status
+    ) {}
 }

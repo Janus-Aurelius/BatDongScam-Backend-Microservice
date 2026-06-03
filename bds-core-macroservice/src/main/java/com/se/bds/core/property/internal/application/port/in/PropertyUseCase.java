@@ -43,4 +43,14 @@ public interface PropertyUseCase {
     IdentificationDocument uploadPropertyDocument(UUID propertyId, UploadDocumentCommand command, MultipartFile file);
     java.util.List<IdentificationDocument> getPropertyDocuments(UUID propertyId);
     IdentificationDocument verifyPropertyDocument(UUID documentId, VerifyDocumentCommand command);
+
+    PropertyLocationInfo getPropertyLocationInfo(UUID propertyId);
+
+    record PropertyLocationInfo(
+            UUID propertyId,
+            UUID cityId,
+            UUID districtId,
+            UUID wardId,
+            UUID propertyTypeId
+    ) {}
 }

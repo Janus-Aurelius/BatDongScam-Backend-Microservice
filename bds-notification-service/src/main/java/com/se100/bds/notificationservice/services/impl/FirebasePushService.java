@@ -6,6 +6,7 @@ import com.google.firebase.messaging.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ public class FirebasePushService {
 
     private final FirebaseMessaging firebaseMessaging;
 
+    @CircuitBreaker(name = "firebaseCircuitBreaker")
     public void sendPushNotification(String fcmToken, String title, String body, String imageUrl) {
         try {
             com.google.firebase.messaging.Notification firebaseNotification = com.google.firebase.messaging.Notification

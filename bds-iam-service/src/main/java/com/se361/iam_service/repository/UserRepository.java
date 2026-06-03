@@ -52,4 +52,30 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     );
 
     Page<User> findAllByRole(Constants.RoleEnum role, Pageable pageable);
+
+    @Query("SELECT u FROM User u JOIN u.saleAgent sa WHERE u.role = com.se361.iam_service.util.Constants.RoleEnum.SALESAGENT " +
+            "AND (:name IS NULL OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:maxProperties IS NULL OR sa.maxProperties <= :maxProperties) " +
+            "AND (COALESCE(:wardIds, NULL) IS NULL OR u.wardId IN :wardIds)")
+    List<User> findAllSaleAgentWithFilters(
+            @Param("name") String name,
+            @Param("maxProperties") Integer maxProperties,
+            @Param("wardIds") List<UUID> wardIds
+    );
+
+    @Query("SELECT u FROM User u WHERE u.role = com.se361.iam_service.util.Constants.RoleEnum.CUSTOMER " +
+            "AND (:name IS NULL OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (COALESCE(:wardIds, NULL) IS NULL OR u.wardId IN :wardIds)")
+    List<User> findAllCustomerWithFilters(
+            @Param("name") String name,
+            @Param("wardIds") List<UUID> wardIds
+    );
+
+    @Query("SELECT u FROM User u WHERE u.role = com.se361.iam_service.util.Constants.RoleEnum.PROPERTY_OWNER " +
+            "AND (:name IS NULL OR LOWER(CONCAT(u.lastName, ' ', u.firstName)) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (COALESCE(:wardIds, NULL) IS NULL OR u.wardId IN :wardIds)")
+    List<User> findAllPropertyOwnerWithFilters(
+            @Param("name") String name,
+            @Param("wardIds") List<UUID> wardIds
+    );
 }

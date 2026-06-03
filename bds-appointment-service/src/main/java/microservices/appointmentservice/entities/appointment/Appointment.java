@@ -2,13 +2,12 @@ package microservices.appointmentservice.entities.appointment;
 
 import microservices.appointmentservice.entities.AbstractBaseEntity;
 import microservices.appointmentservice.entities.property.Property;
-import microservices.appointmentservice.entities.user.Customer;
-import microservices.appointmentservice.entities.user.SaleAgent;
 import microservices.appointmentservice.utils.Constants;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "appointment")
@@ -21,17 +20,16 @@ import java.time.LocalDateTime;
         @AttributeOverride(name = "id", column = @Column(name = "appointment_id", nullable = false)),
 })
 public class Appointment extends AbstractBaseEntity {
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @Column(name = "customer_id", nullable = false)
+    private UUID customerId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agent_id")
-    private SaleAgent agent;
+    @Column(name = "agent_id")
+    private UUID agentId;
 
     @Column(name = "requested_date", nullable = false)
     private LocalDateTime requestedDate;

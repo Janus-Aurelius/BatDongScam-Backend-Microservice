@@ -3,7 +3,8 @@ package com.se361.financial_service.services;
 import com.se361.financial_service.dtos.requests.CreatePaymentRequest;
 import com.se361.financial_service.dtos.requests.UpdatePaymentStatusRequest;
 import com.se361.financial_service.dtos.responses.PaymentResponse;
-import com.se361.financial_service.utils.Constants;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -18,8 +19,8 @@ public interface PaymentService {
 
     Page<PaymentResponse> getPayments(
             Pageable pageable,
-            List<Constants.PaymentType> paymentTypes,
-            List<Constants.PaymentStatus> statuses,
+            List<PaymentType> paymentTypes,
+            List<PaymentStatus> statuses,
             UUID payerId,
             UUID contractId,
             UUID propertyId,
@@ -28,7 +29,7 @@ public interface PaymentService {
             Boolean overdue
     );
 
-    Page<PaymentResponse> getPaymentsByPayer(UUID payerId, List<Constants.PaymentStatus> statuses, Pageable pageable);
+    Page<PaymentResponse> getPaymentsByPayer(UUID payerId, List<PaymentStatus> statuses, Pageable pageable);
 
     Page<PaymentResponse> getPaymentsByProperty(UUID propertyId, Pageable pageable);
 

@@ -34,7 +34,9 @@ public class BdsSecurityAutoConfiguration {
                     "/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
-                    "/webjars/**"
+                    "/webjars/**",
+                    "/public/**",
+                    "/api/internal/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

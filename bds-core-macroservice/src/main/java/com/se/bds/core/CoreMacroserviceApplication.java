@@ -11,8 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
 @SpringBootApplication
 @org.springframework.scheduling.annotation.EnableScheduling
+@EnableDiscoveryClient
+@EnableFeignClients
 public class CoreMacroserviceApplication {
 
     public static void main(String[] args) {

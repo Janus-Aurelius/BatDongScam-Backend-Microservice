@@ -1,5 +1,7 @@
 package com.se.bds.core.transaction.internal.application.service;
 
+import com.se.bds.common.enums.PaymentStatus;
+import com.se.bds.common.enums.PaymentType;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.core.shared.event.ContractStatusChangedEvent;
 import com.se.bds.core.shared.event.PaymentCompletedEvent;
