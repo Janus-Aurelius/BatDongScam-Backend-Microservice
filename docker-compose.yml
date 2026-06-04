@@ -25,6 +25,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bds-network
 
@@ -36,6 +41,11 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ping: 1})' || mongo --eval 'db.runCommand({ping: 1})' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bds-network
 
@@ -64,6 +74,11 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
+    healthcheck:
+      test: ["CMD", "cub", "kafka-ready", "1", "10"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bds-network
 
@@ -98,6 +113,12 @@ services:
     depends_on:
       builder:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - bds-network
 
@@ -113,12 +134,13 @@ services:
       SERVER_PORT: 8080
       EUREKA_URI: ${EUREKA_URI}
       APP_SECRET: ${APP_SECRET}
+      JWKS_URI: http://iam-service:8084/api/auth/jwks
     entrypoint: ["java", "-jar", "bds-api-gateway-0.0.1-SNAPSHOT.jar"]
     depends_on:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -153,11 +175,11 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -179,11 +201,11 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -213,11 +235,11 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -249,9 +271,9 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -278,11 +300,11 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -322,11 +344,11 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network
 
@@ -357,12 +379,12 @@ services:
       builder:
         condition: service_completed_successfully
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
-        condition: service_started
+        condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - bds-network

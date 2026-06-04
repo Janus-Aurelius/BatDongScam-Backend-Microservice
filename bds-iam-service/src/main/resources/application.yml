@@ -45,6 +45,7 @@ logging:
 
 app:
   secret: ${APP_SECRET:BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
+  private-key: ${APP_PRIVATE_KEY:}
   jwt:
     token:
       expires-in: ${APP_JWT_TOKEN_EXPIRES_IN:10800000}

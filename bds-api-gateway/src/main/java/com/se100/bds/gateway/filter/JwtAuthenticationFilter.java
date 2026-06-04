@@ -5,7 +5,6 @@ import com.se100.bds.gateway.config.AppProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +18,16 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.security.Key;
+import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -35,9 +38,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final Environment env;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final WebClient webClient = WebClient.create();
+
+    private volatile PublicKey cachedPublicKey;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        if (appProperties == null || appProperties.getPublicPaths() == null) {
+            log.error("Gateway JWT Configuration missing: appProperties or publicPaths is null.");
+            return onError(exchange, "Internal server configuration error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
@@ -56,67 +67,68 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = authHeader.substring(7);
 
-        try {
+        // Handle Mock Tokens for Test/Local profiles
+        if (isMockToken(token) && isTestOrLocalProfile()) {
             String userId;
             String roles;
-
-            if (isMockToken(token) && isTestOrLocalProfile()) {
-                if ("admin".equals(token)) {
-                    userId = "admin-id";
-                    roles = "ADMIN";
-                } else if ("agent1".equals(token)) {
-                    userId = "agent-id";
-                    roles = "SALESAGENT";
-                } else if ("customer1".equals(token)) {
-                    userId = "customer-id";
-                    roles = "CUSTOMER";
-                } else {
-                    userId = "anonymous";
-                    roles = "";
-                }
-                log.debug("Mock token bypass applied for: {}, userId: {}, roles: {}", token, userId, roles);
+            if ("admin".equals(token)) {
+                userId = "admin-id";
+                roles = "ADMIN";
+            } else if ("agent1".equals(token)) {
+                userId = "agent-id";
+                roles = "SALESAGENT";
+            } else if ("customer1".equals(token)) {
+                userId = "customer-id";
+                roles = "CUSTOMER";
             } else {
-                Claims claims = parseToken(token);
-                userId = claims.getSubject();
-                roles = claims.get("roles", String.class);
-                if (roles == null) {
-                    Object rolesObj = claims.get("roles");
-                    if (rolesObj != null) {
-                        roles = rolesObj.toString();
-                    } else {
-                        roles = "";
-                    }
-                }
-                log.debug("JWT validated for user: {}, roles: {}, path: {}", userId, roles, path);
+                userId = "anonymous";
+                roles = "";
             }
+            log.debug("Mock token bypass applied for: {}, userId: {}, roles: {}", token, userId, roles);
 
-            // Forward userId to downstream services via X-User-Id header and roles via X-User-Roles
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Roles", roles)
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
-
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token expired: {}", e.getMessage());
-            return onError(exchange, "Token expired", HttpStatus.UNAUTHORIZED);
-        } catch (SignatureException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
-            return onError(exchange, "Invalid JWT signature", HttpStatus.UNAUTHORIZED);
-        } catch (MalformedJwtException e) {
-            log.error("Malformed JWT token: {}", e.getMessage());
-            return onError(exchange, "Malformed JWT token", HttpStatus.UNAUTHORIZED);
-        } catch (UnsupportedJwtException e) {
-            log.error("Unsupported JWT token: {}", e.getMessage());
-            return onError(exchange, "Unsupported JWT token", HttpStatus.UNAUTHORIZED);
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-            return onError(exchange, "JWT claims string is empty", HttpStatus.UNAUTHORIZED);
-        } catch (JwtException e) {
-            log.error("JWT validation failed: {}", e.getMessage());
-            return onError(exchange, "Invalid token", HttpStatus.UNAUTHORIZED);
         }
+
+        // Real Token validation (Reactive)
+        return parseClaims(token)
+                .flatMap(claims -> {
+                    String userId = claims.getSubject();
+                    String roles = claims.get("roles", String.class);
+                    if (roles == null) {
+                        Object rolesObj = claims.get("roles");
+                        roles = rolesObj != null ? rolesObj.toString() : "";
+                    }
+                    log.debug("JWT validated for user: {}, roles: {}, path: {}", userId, roles, path);
+
+                    ServerHttpRequest modifiedRequest = request.mutate()
+                            .header("X-User-Id", userId)
+                            .header("X-User-Roles", roles)
+                            .build();
+
+                    return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                })
+                .onErrorResume(e -> {
+                    log.error("JWT validation failed: {}", e.getMessage());
+                    HttpStatus status = HttpStatus.UNAUTHORIZED;
+                    String msg = "Invalid token";
+                    if (e instanceof ExpiredJwtException) {
+                        msg = "Token expired";
+                    } else if (e instanceof SignatureException) {
+                        msg = "Invalid JWT signature";
+                    } else if (e instanceof MalformedJwtException) {
+                        msg = "Malformed JWT token";
+                    } else if (e instanceof UnsupportedJwtException) {
+                        msg = "Unsupported JWT token";
+                    } else if (e instanceof IllegalArgumentException) {
+                        msg = "JWT claims string is empty";
+                    }
+                    return onError(exchange, msg, status);
+                });
     }
 
     @Override
@@ -139,16 +151,75 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return activeProfiles.isEmpty() || activeProfiles.contains("local") || activeProfiles.contains("test") || activeProfiles.contains("dev");
     }
 
-    private Claims parseToken(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    private Mono<Claims> parseClaims(String token) {
+        return getPublicKey()
+                .flatMap(key -> {
+                    try {
+                        Claims claims = Jwts.parser()
+                                .verifyWith(key)
+                                .build()
+                                .parseSignedClaims(token)
+                                .getPayload();
+                        return Mono.just(claims);
+                    } catch (SignatureException e) {
+                        log.warn("JWT signature verification failed with cached key. Invalidating cache and retrying...");
+                        this.cachedPublicKey = null; // Invalidate cache
+                        return getPublicKey()
+                                .map(newKey -> Jwts.parser()
+                                        .verifyWith(newKey)
+                                        .build()
+                                        .parseSignedClaims(token)
+                                        .getPayload());
+                    }
+                });
     }
 
-    private javax.crypto.SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(appProperties.getSecret().getBytes());
+    private Mono<PublicKey> getPublicKey() {
+        if (cachedPublicKey != null) {
+            return Mono.just(cachedPublicKey);
+        }
+        return fetchPublicKeyFromIam()
+                .doOnNext(key -> this.cachedPublicKey = key);
+    }
+
+    private Mono<PublicKey> fetchPublicKeyFromIam() {
+        String jwksUri = appProperties.getJwksUri();
+        if (!StringUtils.hasText(jwksUri)) {
+            jwksUri = "http://iam-service:8084/api/auth/jwks";
+        }
+        log.info("Fetching JWKS from IAM service: {}", jwksUri);
+        return webClient.get()
+                .uri(jwksUri)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(this::extractPublicKeyFromJwks)
+                .timeout(java.time.Duration.ofSeconds(5))
+                .onErrorMap(e -> new RuntimeException("Failed to fetch JWKS: " + e.getMessage(), e));
+    }
+
+    @SuppressWarnings("unchecked")
+    private PublicKey extractPublicKeyFromJwks(Map<String, Object> jwks) {
+        try {
+            List<Map<String, Object>> keys = (List<Map<String, Object>>) jwks.get("keys");
+            if (keys == null || keys.isEmpty()) {
+                throw new IllegalArgumentException("No keys found in JWKS response.");
+            }
+            Map<String, Object> jwk = keys.get(0);
+            String nStr = (String) jwk.get("n");
+            String eStr = (String) jwk.get("e");
+
+            byte[] modulusBytes = Base64.getUrlDecoder().decode(nStr);
+            byte[] exponentBytes = Base64.getUrlDecoder().decode(eStr);
+
+            java.math.BigInteger modulus = new java.math.BigInteger(1, modulusBytes);
+            java.math.BigInteger exponent = new java.math.BigInteger(1, exponentBytes);
+
+            java.security.spec.RSAPublicKeySpec spec = new java.security.spec.RSAPublicKeySpec(modulus, exponent);
+            java.security.KeyFactory factory = java.security.KeyFactory.getInstance("RSA");
+            return factory.generatePublic(spec);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to extract public key from JWKS", e);
+        }
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {

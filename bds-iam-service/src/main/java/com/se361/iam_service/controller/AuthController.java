@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.se361.iam_service.security.JwtTokenProvider;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final com.se361.iam_service.service.UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -43,5 +47,10 @@ public class AuthController {
             @RequestHeader("Authorization") String bearerToken
     ) {
         return ResponseEntity.ok(authService.refresh(bearerToken));
+    }
+
+    @GetMapping("/jwks")
+    public ResponseEntity<Map<String, Object>> getJwks() {
+        return ResponseEntity.ok(jwtTokenProvider.getJwks());
     }
 }

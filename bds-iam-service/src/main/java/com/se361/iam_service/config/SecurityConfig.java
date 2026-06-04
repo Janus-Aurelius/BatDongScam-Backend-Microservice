@@ -34,6 +34,7 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/refresh",
+                                "/api/auth/jwks",
                                 "/users/validate",
                                 "/users/*/status",
                                 "/api/users/*/fcm-token"
