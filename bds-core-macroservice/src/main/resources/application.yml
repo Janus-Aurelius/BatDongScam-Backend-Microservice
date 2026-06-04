@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: core-macroservice
+  flyway:
+    enabled: false
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -18,6 +20,7 @@ spring:
     init:
       mode: always
   jpa:
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
     show-sql: true

@@ -75,10 +75,10 @@ services:
     depends_on:
       - zookeeper
     healthcheck:
-      test: ["CMD", "cub", "kafka-ready", "1", "10"]
+      test: ["CMD", "cub", "kafka-ready", "-b", "localhost:9092", "1", "10"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 15
     networks:
       - bds-network
 
@@ -105,8 +105,8 @@ services:
     ports:
       - "8761:8761"
     volumes:
-      - ./bds-eureka-server/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-eureka-server/target
     environment:
       EUREKA_HOSTNAME: eureka-server
     entrypoint: ["java", "-jar", "bds-eureka-server-0.0.1-SNAPSHOT.jar"]
@@ -128,8 +128,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./bds-api-gateway/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-api-gateway/target
     environment:
       SERVER_PORT: 8080
       EUREKA_URI: ${EUREKA_URI}
@@ -150,8 +150,8 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./bds-core-macroservice/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-core-macroservice/target
     environment:
       SERVER_PORT: 8081
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
@@ -183,13 +183,14 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./bds-search-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-search-service/target
     environment:
       SERVER_PORT: 8082
       EUREKA_URI: ${EUREKA_URI}
       MONGODB_URI: ${MONGODB_URI}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING: "true"
     entrypoint: ["java", "-jar", "bds-search-service-0.0.1-SNAPSHOT.jar"]
     depends_on:
       builder:
@@ -209,8 +210,8 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ./bds-notification-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-notification-service/target
     environment:
       SERVER_PORT: 8083
       EUREKA_URI: ${EUREKA_URI}
@@ -224,6 +225,7 @@ services:
       FIREBASE_APP_NAME: ${FIREBASE_APP_NAME}
       FIREBASE_CREDENTIALS_FILE: ${FIREBASE_CREDENTIALS_FILE}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING: "true"
     entrypoint: ["java", "-jar", "bds-notification-service-0.0.1-SNAPSHOT.jar"]
     depends_on:
       builder:
@@ -243,8 +245,8 @@ services:
     ports:
       - "8084:8084"
     volumes:
-      - ./bds-iam-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-iam-service/target
     environment:
       SERVER_PORT: 8084
       APP_NAME: iam-service
@@ -277,8 +279,8 @@ services:
     ports:
       - "8085:8085"
     volumes:
-      - ./bds-appointment-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-appointment-service/target
     environment:
       SERVER_PORT: 8085
       APP_NAME: appointment-service
@@ -288,6 +290,7 @@ services:
       POSTGRESQL_USER: ${POSTGRESQL_USER}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       EUREKA_URI: ${EUREKA_URI}
+      MONGODB_URI: ${MONGODB_URI}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
     entrypoint: ["java", "-jar", "bds-appointment-service-0.0.1-SNAPSHOT.jar"]
     depends_on:
@@ -296,6 +299,8 @@ services:
       eureka-server:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -308,8 +313,8 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - ./bds-financial-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-financial-service/target
     environment:
       SERVER_PORT: 8086
       SPRING_APPLICATION_NAME: financial-service
@@ -343,8 +348,8 @@ services:
     ports:
       - "8087:8087"
     volumes:
-      - ./bds-moderation-service/target:/app
-    working_dir: /app
+      - ./:/workspace
+    working_dir: /workspace/bds-moderation-service/target
     environment:
       SERVER_PORT: 8087
       APP_NAME: moderation-service

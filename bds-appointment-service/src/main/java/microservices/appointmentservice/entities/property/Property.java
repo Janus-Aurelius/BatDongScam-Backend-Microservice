@@ -46,6 +46,11 @@ public class Property extends AbstractBaseEntity {
     @Column(name = "ward_id", nullable = false)
     private UUID wardId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ward_id", insertable = false, updatable = false)
+    @JsonIgnore
+    private microservices.appointmentservice.entities.location.Ward ward;
+
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 

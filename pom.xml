@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.6</version>
+		<version>3.4.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.se.bds</groupId>
@@ -48,7 +48,7 @@
 		<spring-modulith.version>2.0.5</spring-modulith.version>
 		<firebase.version>9.8.0</firebase.version>
         <modelmapper.version>3.1.0</modelmapper.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>2.8.6</springdoc.version>
         <stripe.version>32.2.0-beta.2</stripe.version>
         <jjwt.version>0.13.0</jjwt.version>
         <cloudinary.version>1.39.0</cloudinary.version>
@@ -162,15 +162,6 @@
 			<artifactId>mapstruct-processor</artifactId>
 			<version>1.5.5.Final</version>
 			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

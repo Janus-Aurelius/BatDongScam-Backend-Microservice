@@ -9,7 +9,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<groupId>com.se.bds</groupId>
-	<artifactId>api-gateway</artifactId>
+	<artifactId>bds-api-gateway</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>api-gateway</name>
 	<description>BDS API Gateway - Spring Cloud Gateway (WebFlux)</description>
