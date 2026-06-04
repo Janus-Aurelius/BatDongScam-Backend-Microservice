@@ -12,6 +12,12 @@ import com.se361.financial_service.exceptions.BadRequestException;
 import com.se361.financial_service.exceptions.NotFoundException;
 import com.se361.financial_service.repositories.PaymentRepository;
 import com.se361.financial_service.services.PaymentService;
+import com.se361.financial_service.repositories.PayoutRepository;
+import com.stripe.model.checkout.Session;
+import com.stripe.model.Event;
+import com.stripe.net.Webhook;
+import com.stripe.exception.SignatureVerificationException;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +41,12 @@ import java.util.UUID;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final PayoutRepository payoutRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+
+    @Value("${stripe.webhook-secret}")
+    private String webhookSecret;
 
     @Override
     @Transactional
@@ -152,47 +162,56 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public void handlePayOSWebhook(String rawBody) {
-        log.info("Received PayOS webhook: {}", rawBody);
+    public void handleStripeWebhook(String payload, String sigHeader) {
+        log.info("Received Stripe webhook event");
         try {
-            var node = objectMapper.readTree(rawBody);
-            var dataNode = node.get("data");
-            if (dataNode == null) {
-                log.warn("PayOS webhook payload is missing data object");
-                return;
-            }
-            String payosPaymentId = dataNode.has("paymentLinkId") ? dataNode.get("paymentLinkId").asText() : null;
-            String statusStr = dataNode.has("desc") ? dataNode.get("desc").asText() : null;
-            if (payosPaymentId == null && dataNode.has("orderCode")) {
-                payosPaymentId = dataNode.get("orderCode").asText();
-            }
+            Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            log.info("Verified Stripe webhook event: id={}, type={}", event.getId(), event.getType());
 
-            if (payosPaymentId == null) {
-                log.warn("PayOS webhook payload does not contain paymentLinkId or orderCode");
-                return;
-            }
-
-            var paymentOpt = paymentRepository.findByPayosPaymentId(payosPaymentId);
-            if (paymentOpt.isPresent()) {
-                var payment = paymentOpt.get();
-                if (payment.getStatus() != PaymentStatus.SUCCESS) {
-                    if ("success".equalsIgnoreCase(statusStr) || "00".equals(statusStr) || "SUCCESS".equalsIgnoreCase(statusStr)) {
-                        payment.setStatus(PaymentStatus.SUCCESS);
-                        payment.setPaidTime(LocalDateTime.now());
-                        Payment saved = paymentRepository.save(payment);
-                        log.info("PayOS webhook: Payment {} marked SUCCESS", payment.getId());
-                        publishPaymentCompleted(saved);
+            if ("checkout.session.completed".equals(event.getType())) {
+                Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
+                if (session != null) {
+                    String sessionId = session.getId();
+                    var paymentOpt = paymentRepository.findByStripeSessionId(sessionId);
+                    if (paymentOpt.isPresent()) {
+                        var payment = paymentOpt.get();
+                        if (payment.getStatus() != PaymentStatus.SUCCESS) {
+                            payment.setStatus(PaymentStatus.SUCCESS);
+                            payment.setPaidTime(LocalDateTime.now());
+                            payment.setTransactionReference(session.getPaymentIntent());
+                            Payment saved = paymentRepository.save(payment);
+                            log.info("Stripe Webhook: Payment {} marked SUCCESS", payment.getId());
+                            publishPaymentCompleted(saved);
+                        }
                     } else {
-                        payment.setStatus(PaymentStatus.FAILED);
-                        paymentRepository.save(payment);
-                        log.info("PayOS webhook: Payment {} marked FAILED", payment.getId());
+                        log.warn("Payment not found for Stripe session: {}", sessionId);
                     }
                 }
-            } else {
-                log.warn("Payment not found for PayOS paymentId: {}", payosPaymentId);
+            } else if ("payout.paid".equals(event.getType())) {
+                com.stripe.model.Payout payout = (com.stripe.model.Payout) event.getDataObjectDeserializer().getObject().orElse(null);
+                if (payout != null) {
+                    payoutRepository.findByStripePayoutId(payout.getId()).ifPresentOrElse(p -> {
+                        p.setStatus("PAID");
+                        payoutRepository.save(p);
+                        log.info("Stripe Webhook: Payout {} marked PAID", p.getId());
+                    }, () -> log.warn("Payout not found for Stripe payout ID: {}", payout.getId()));
+                }
+            } else if ("payout.failed".equals(event.getType())) {
+                com.stripe.model.Payout payout = (com.stripe.model.Payout) event.getDataObjectDeserializer().getObject().orElse(null);
+                if (payout != null) {
+                    payoutRepository.findByStripePayoutId(payout.getId()).ifPresentOrElse(p -> {
+                        p.setStatus("FAILED");
+                        p.setErrorMessage(payout.getFailureMessage());
+                        payoutRepository.save(p);
+                        log.info("Stripe Webhook: Payout {} marked FAILED", p.getId());
+                    }, () -> log.warn("Payout not found for Stripe payout ID: {}", payout.getId()));
+                }
             }
+        } catch (SignatureVerificationException e) {
+            log.error("Failed to verify Stripe webhook signature", e);
+            throw new BadRequestException("Invalid webhook signature");
         } catch (Exception e) {
-            log.error("Failed to parse/process PayOS webhook payload", e);
+            log.error("Error processing Stripe webhook", e);
             throw new RuntimeException(e);
         }
     }

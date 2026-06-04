@@ -5,6 +5,9 @@ spring:
   application:
     name: ${SPRING_APPLICATION_NAME:financial-service}
 
+  flyway:
+    baseline-on-migrate: true
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -37,17 +40,6 @@ jwt:
   secret: ${JWT_SECRET:BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
   expiration: ${JWT_EXPIRATION:10800000}
 
-payway:
-  service-url: ${PAYWAY_SERVICE_URL:http://localhost:3000}
-  api-key: ${PAYWAY_API_KEY:default-key}
-  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL:http://localhost:8080}
-  return-url: ${PAYWAY_RETURN_URL:http://localhost:3000/return}
-  verify-key: ${PAYWAY_VERIFY_KEY:default-verify-key}
-
-paypal:
-  client-id: ${PAYPAL_CLIENT_ID:default-id}
-  client-secret: ${PAYPAL_CLIENT_SECRET:default-secret}
-  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
-  return-url: ${PAYPAL_RETURN_URL:http://localhost:8086/api/payments/paypal/return}
-  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8086/api/payments/paypal/cancel}
-  brand-name: ${PAYPAL_BRAND_NAME:BDS Platform}
+stripe:
+  api-key: ${STRIPE_API_KEY:default-key}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:default-secret}

@@ -15,16 +15,15 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 @Slf4j
-public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
+public class StripePaymentGatewayAdapter implements PaymentGatewayPort {
 
     private final RestTemplate restTemplate;
     private final String financialServiceUrl;
 
-    public PaywayPaymentGatewayAdapter(
+    public StripePaymentGatewayAdapter(
             RestTemplate restTemplate,
             @Value("${financial.service-url:http://localhost:8086}") String financialServiceUrl) {
         this.restTemplate = restTemplate;
@@ -57,7 +56,7 @@ public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
             Map<String, Object> metadata,
             String idempotencyKey) {
         
-        log.info("[EVENT] Delegating payment session creation to Financial Service: amount={}, currency={}", amount, currency);
+        log.info("[EVENT] Delegating Stripe payment session creation to Financial Service: amount={}, currency={}", amount, currency);
         
         String url = financialServiceUrl + "/api/internal/payments/session";
         Map<String, Object> requestBody = Map.of(
@@ -104,7 +103,6 @@ public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
     @Override
     public PaymentSessionResult getPaymentSession(String gatewayPaymentId) {
         log.info("[EVENT] Fetching payment session status from Financial Service: {}", gatewayPaymentId);
-        // Simple mock or route to query if needed, since it's not actively called in core flows
         return new PaymentSessionResult(
                 gatewayPaymentId,
                 financialServiceUrl + "/api/payments/" + gatewayPaymentId,
@@ -125,7 +123,7 @@ public class PaywayPaymentGatewayAdapter implements PaymentGatewayPort {
             Map<String, Object> metadata,
             String idempotencyKey) {
         
-        log.info("[EVENT] Delegating payout session creation to Financial Service: amount={}, bankAccount={}", amount, accountNumber);
+        log.info("[EVENT] Delegating Stripe payout session creation to Financial Service: amount={}, bankAccount={}", amount, accountNumber);
         
         String url = financialServiceUrl + "/api/internal/payments/payout";
         Map<String, Object> requestBody = Map.of(

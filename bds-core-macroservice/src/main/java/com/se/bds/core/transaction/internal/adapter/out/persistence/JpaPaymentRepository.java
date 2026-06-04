@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public interface JpaPaymentRepository extends JpaRepository<Payment, UUID> {
 
-    Optional<Payment> findByPaywayPaymentId(String paywayPaymentId);
+    Optional<Payment> findByStripeSessionId(String stripeSessionId);
 
     List<Payment> findByContractId(UUID contractId);
 

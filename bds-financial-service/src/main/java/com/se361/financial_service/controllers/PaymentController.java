@@ -13,8 +13,6 @@ import com.se361.financial_service.gateway.CreatePaymentSessionRequest;
 import com.se361.financial_service.gateway.CreatePaymentSessionResponse;
 import com.se361.financial_service.gateway.CreatePayoutSessionRequest;
 import com.se361.financial_service.gateway.CreatePayoutSessionResponse;
-import com.se361.financial_service.gateway.paypal.PayPalService;
-import com.se361.financial_service.gateway.payway.PaywayService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,8 +34,6 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final PaywayService paywayService;
-    private final PayPalService payPalService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SALESAGENT')")

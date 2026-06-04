@@ -172,7 +172,7 @@ public class RentalContractScheduler {
                 savedPayment.getId().toString()
         );
 
-        savedPayment.setPaywayPaymentId(gatewayResponse.gatewayPaymentId());
+        savedPayment.setStripeSessionId(gatewayResponse.gatewayPaymentId());
         paymentRepository.save(savedPayment);
 
         log.info("[RentalContractScheduler] Created monthly payment {} (installment {}) for contract {}",

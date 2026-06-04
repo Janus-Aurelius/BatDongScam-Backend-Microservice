@@ -26,7 +26,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>, JpaSpec
 
     List<Payment> findByContractIdAndPaymentType(UUID contractId, PaymentType paymentType);
 
-    Optional<Payment> findByPayosPaymentId(String payosPaymentId);
+    Optional<Payment> findByStripeSessionId(String stripeSessionId);
 
     boolean existsByContractIdAndPaymentType(UUID contractId, PaymentType paymentType);
 

@@ -65,6 +65,6 @@ public class Payment extends AbstractBaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "payway_payment_id", unique = true, length = 36)
-    private String paywayPaymentId;
+    @Column(name = "stripe_session_id", unique = true, length = 255)
+    private String stripeSessionId;
 }

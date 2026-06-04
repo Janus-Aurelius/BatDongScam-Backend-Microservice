@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface PayoutRepository extends JpaRepository<Payout, UUID> {
-    Optional<Payout> findByGatewayPayoutId(String gatewayPayoutId);
+    Optional<Payout> findByStripePayoutId(String stripePayoutId);
 }

@@ -37,8 +37,8 @@ public class Payout extends AbstractBaseEntity {
     @Column(name = "status", nullable = false)
     private String status; // PENDING, PAID, FAILED
 
-    @Column(name = "gateway_payout_id", unique = true)
-    private String gatewayPayoutId;
+    @Column(name = "stripe_payout_id", unique = true, length = 255)
+    private String stripePayoutId;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;

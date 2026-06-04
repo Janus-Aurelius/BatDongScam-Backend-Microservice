@@ -76,8 +76,8 @@ public class Payment extends AbstractBaseEntity {
 
     // === PAYMENT GATEWAY ===
 
-    @Column(name = "payos_payment_id", unique = true)
-    private String payosPaymentId;
+    @Column(name = "stripe_session_id", unique = true, length = 255)
+    private String stripeSessionId;
 
     @Column(name = "checkout_url", columnDefinition = "TEXT")
     private String checkoutUrl;

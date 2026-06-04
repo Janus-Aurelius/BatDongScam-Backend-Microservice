@@ -14,7 +14,7 @@ public interface PaymentRepository {
 
     Optional<Payment> findById(UUID id);
 
-    Optional<Payment> findByPaywayPaymentId(String paywayPaymentId);
+    Optional<Payment> findByStripeSessionId(String stripeSessionId);
 
     Payment save(Payment payment);
 

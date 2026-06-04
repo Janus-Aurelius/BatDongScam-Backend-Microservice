@@ -40,14 +40,6 @@ logging:
     org.springframework.modulith: DEBUG
 
 # External Services Integration
-payway:
-  service-url: ${PAYWAY_SERVICE_URL:http://localhost:3000}
-  api-key: ${PAYWAY_API_KEY:default-key}
-  merchant-id: ${PAYWAY_MERCHANT_ID:default-merchant}
-  verify-key: ${PAYWAY_VERIFY_KEY:default-verify-key}
-  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL:http://localhost:8080}
-  return-url: ${PAYWAY_RETURN_URL:http://localhost:3000/return}
-
 cloudinary:
   cloud-name: ${CLOUD_NAME:default}
   api-key: ${CLOUDINARY_API_KEY:default}

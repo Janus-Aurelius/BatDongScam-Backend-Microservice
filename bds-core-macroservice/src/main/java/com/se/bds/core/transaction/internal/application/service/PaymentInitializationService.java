@@ -59,11 +59,11 @@ public class PaymentInitializationService implements PaymentInitializationUseCas
         );
 
         // Update payment record
-        payment.setPaywayPaymentId(sessionResult.gatewayPaymentId());
+        payment.setStripeSessionId(sessionResult.gatewayPaymentId());
         payment.setStatus(PaymentStatus.PENDING);
         paymentRepository.save(payment);
 
-        log.info("[EVENT] Payment session updated in db: paymentId={}, paywayPaymentId={}", paymentId, sessionResult.gatewayPaymentId());
+        log.info("[EVENT] Payment session updated in db: paymentId={}, stripeSessionId={}", paymentId, sessionResult.gatewayPaymentId());
 
         return new PaymentInitResult(
                 payment.getId(),

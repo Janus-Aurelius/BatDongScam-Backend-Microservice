@@ -35,5 +35,5 @@ public interface PaymentService {
 
     PaymentResponse updatePaymentStatus(UUID paymentId, UpdatePaymentStatusRequest request);
 
-    void handlePayOSWebhook(String rawBody);
+    void handleStripeWebhook(String payload, String sigHeader);
 }

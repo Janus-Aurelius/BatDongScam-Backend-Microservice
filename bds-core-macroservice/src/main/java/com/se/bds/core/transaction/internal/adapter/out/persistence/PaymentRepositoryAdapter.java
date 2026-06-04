@@ -23,8 +23,8 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     }
 
     @Override
-    public Optional<Payment> findByPaywayPaymentId(String paywayPaymentId) {
-        return jpaPaymentRepository.findByPaywayPaymentId(paywayPaymentId);
+    public Optional<Payment> findByStripeSessionId(String stripeSessionId) {
+        return jpaPaymentRepository.findByStripeSessionId(stripeSessionId);
     }
 
     @Override
