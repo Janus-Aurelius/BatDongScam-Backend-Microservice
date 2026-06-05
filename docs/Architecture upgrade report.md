@@ -165,11 +165,22 @@ public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
 }
 ```
 
+> [!WARNING]
+> **Hibernate SKIP LOCKED Caveat:**
+> While `jakarta.persistence.lock.timeout` with a value of `-2` is the standard JPA 3.0 / Hibernate 6 way to request `SKIP LOCKED`, some versions of Hibernate or specific PostgreSQL dialects might silently ignore this hint and fall back to a standard blocking lock. 
+> 
+> Developer A **must** verify the generated SQL logs during startup. If Hibernate does not append `FOR UPDATE SKIP LOCKED` to the native query execution, they must rewrite this method using a native query:
+> ```java
+> @Query(value = "SELECT * FROM outbox_events WHERE processed = false ORDER BY created_at ASC LIMIT :limit FOR UPDATE SKIP LOCKED", nativeQuery = true)
+> List<OutboxEvent> findUnprocessedForUpdate(int limit);
+> ```
+
 ### 4. Track 1 Verification Checklist
 *   [ ] SQL migration script successfully executed on Postgres instances.
 *   [ ] Unit test written confirming that throwing a database exception rolls back both the payment record AND the outbox record.
 *   [ ] Integration test written showcasing that disabling the Kafka broker does not prevent the payment state from saving as success, and that the message is sent once Kafka starts again.
 *   [ ] Profiler check confirms no double-publishing occurs when running 2 replicas of `bds-financial-service` simultaneously.
+*   [ ] Verify Hibernate logs during startup to confirm `FOR UPDATE SKIP LOCKED` is appended to the SQL query. If it is ignored, rewrite as a native query.
 
 ---
 
@@ -302,6 +313,7 @@ public class PropertyEventListener {
 *   [ ] Clean build of `/bds-common` is successful.
 *   [ ] Checked `bds-appointment-service`, `bds-notification-service`, and `bds-search-service` listeners: verified that all references to `coreServiceClient` inside consumer listeners have been deleted.
 *   [ ] Run integration test where `bds-core-macroservice` is entirely shut down, and confirm that sending a `property-created` Kafka mock message still successfully creates the record inside the appointment service database.
+*   [ ] Integration test written to verify Idempotency: Pushing the exact same `PropertyCreatedIntegrationEvent` payload to the Kafka topic twice does not result in a database error, constraint violation, or duplicate record creation.
 
 ---
 
@@ -372,7 +384,51 @@ public interface ViolationRepository extends JpaRepository<ViolationReport, UUID
 }
 ```
 
-#### C. Setting up Circuit Breaker + Fallback Factory
+#### C. Replica Sync Listener (Hydrating the Materialized View)
+Define a synchronizer listener in `bds-moderation-service` to process user and property updates and hydrate the local replica caches:
+```java
+package microservices.moderationservice.moderation.listener;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import microservices.moderationservice.moderation.entity.UserReplica;
+import microservices.moderationservice.moderation.repository.UserReplicaRepository;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@Slf4j
+@RequiredArgsConstructor
+public class ReplicaSyncListener {
+    private final UserReplicaRepository userReplicaRepository;
+    private final ObjectMapper objectMapper;
+
+    @KafkaListener(topics = "user-updated", groupId = "moderation-replica-group")
+    public void syncUserReplica(String message) {
+        log.info("[REPLICA-SYNC] Received user-updated event payload");
+        try {
+            // Deserialize enriched user event
+            UserReplicaEvent event = objectMapper.readValue(message, UserReplicaEvent.class);
+            
+            UserReplica replica = userReplicaRepository.findById(event.userId())
+                .orElseGet(() -> UserReplica.builder().id(event.userId()).build());
+                
+            replica.setFullName(event.fullName());
+            replica.setAvatarUrl(event.avatarUrl());
+            replica.setEmail(event.email());
+            replica.setRole(event.role());
+            
+            userReplicaRepository.save(replica);
+            log.info("[REPLICA-SYNC] Synchronized UserReplica cache for user ID={}", event.userId());
+        } catch (Exception e) {
+            log.error("[REPLICA-SYNC] Failed to synchronize UserReplica cache", e);
+        }
+    }
+}
+```
+
+#### D. Setting up Circuit Breaker + Fallback Factory
 ```java
 package microservices.moderationservice.client;
 
@@ -397,7 +453,7 @@ public interface IamServiceClient {
 }
 ```
 
-#### D. Fallback Factory Class Implementation
+#### E. Fallback Factory Class Implementation
 ```java
 package microservices.moderationservice.client;
 
@@ -438,7 +494,7 @@ public class IamServiceClientFallbackFactory implements FallbackFactory<IamServi
 }
 ```
 
-#### E. Resilience4j Configurations (`bds-moderation-service` - `application.yml`)
+#### F. Resilience4j Configurations (`bds-moderation-service` - `application.yml`)
 Add configuration flags inside `bds-moderation-service/src/main/resources/application.yml`:
 ```yaml
 feign:
