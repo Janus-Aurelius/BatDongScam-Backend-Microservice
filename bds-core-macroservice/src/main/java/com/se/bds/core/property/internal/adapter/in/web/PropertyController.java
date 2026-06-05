@@ -1,14 +1,10 @@
 package com.se.bds.core.property.internal.adapter.in.web;
 
-import com.se.bds.core.property.internal.adapter.in.web.dto.CreatePropertyWebRequest;
-import com.se.bds.core.property.internal.adapter.in.web.dto.PropertyTypeWebRequest;
-import com.se.bds.core.property.internal.adapter.in.web.dto.UpdatePropertyStatusWebRequest;
-import com.se.bds.core.property.internal.adapter.in.web.dto.UpdatePropertyWebRequest;
+import com.se.bds.core.property.internal.adapter.in.web.dto.*;
 import com.se.bds.core.property.internal.adapter.in.web.mapper.PropertyWebMapper;
 import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
-import com.se.bds.core.property.internal.domain.model.Property;
-import com.se.bds.core.property.internal.domain.model.PropertyType;
+import com.se.bds.core.property.internal.domain.model.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -86,7 +82,7 @@ public class PropertyController {
 
     @GetMapping("/public/properties/search")
     public ResponseEntity<Page<?>> searchProperties(
-            @RequestPart(required = false)List<UUID> cityIds,
+            @RequestParam(required = false)List<UUID> cityIds,
             @RequestParam(required = false) List<UUID> districtIds,
             @RequestParam(required = false) List<UUID> wardIds,
             @RequestParam(required = false) List<UUID> propertyTypeIds,
@@ -102,13 +98,14 @@ public class PropertyController {
             @RequestParam(required = false) Integer floors,
             @RequestParam(required = false) String transactionType,
             @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) Boolean topK,
             Pageable pageable
             )
     {
         SearchPropertyCommand command = new SearchPropertyCommand(
                 cityIds, districtIds, wardIds, propertyTypeIds, ownerId, agentId,
                 minPrice, maxPrice, minArea, maxArea, rooms, bathrooms, bedrooms, floors,
-                transactionType, statuses
+                transactionType, statuses, topK
         );
         return ResponseEntity.ok(propertyUseCase.searchProperties(command, pageable));
     }
@@ -129,10 +126,97 @@ public class PropertyController {
         )));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/properties/types/{typeId}")
+    public ResponseEntity<?> updatePropertyType(@PathVariable UUID typeId, @Valid @RequestBody PropertyTypeWebRequest request) {
+        return ResponseEntity.ok(propertyUseCase.updatePropertyType(typeId, new UpdatePropertyTypeCommand(
+                request.typeName(), request.description(), request.isActive()
+        )));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/properties/types/{typeId}")
+    public ResponseEntity<Void> deletePropertyType(@PathVariable UUID typeId) {
+        propertyUseCase.deletePropertyType(typeId);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/public/properties/types")
     public ResponseEntity<Page<PropertyType>> getAllPropertyTypes(Pageable pageable)
     {
         return ResponseEntity.ok(propertyUseCase.getAllPropertyTypes(pageable));
     }
 
+    // Document Type CRUD
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/properties/documents/types")
+    public ResponseEntity<?> createDocumentType(@Valid @RequestBody CreateDocumentTypeWebRequest request) {
+        return ResponseEntity.ok(propertyUseCase.createDocumentType(new CreateDocumentTypeCommand(
+                request.name(), request.description(), request.isCompulsory()
+        )));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/properties/documents/types/{typeId}")
+    public ResponseEntity<?> updateDocumentType(@PathVariable UUID typeId, @Valid @RequestBody UpdateDocumentTypeWebRequest request) {
+        return ResponseEntity.ok(propertyUseCase.updateDocumentType(typeId, new UpdateDocumentTypeCommand(
+                request.name(), request.description(), request.isCompulsory()
+        )));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/properties/documents/types/{typeId}")
+    public ResponseEntity<Void> deleteDocumentType(@PathVariable UUID typeId) {
+        propertyUseCase.deleteDocumentType(typeId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/public/properties/documents/types")
+    public ResponseEntity<?> getAllDocumentTypes(Pageable pageable) {
+        return ResponseEntity.ok(propertyUseCase.getAllDocumentTypes(pageable));
+    }
+
+    @GetMapping("/public/properties/documents/types/list")
+    public ResponseEntity<?> getAllDocumentTypesList() {
+        return ResponseEntity.ok(propertyUseCase.getAllDocumentTypesList());
+    }
+
+    // Property Documents Upload & Verification
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROPERTY_OWNER')")
+    @PostMapping(value = "/properties/{propertyId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadPropertyDocument(
+            @PathVariable UUID propertyId,
+            @RequestPart("payload") DocumentMetadataWebRequest request,
+            @RequestPart("file") MultipartFile file) {
+        UploadDocumentCommand command = new UploadDocumentCommand(
+                request.documentTypeId(), request.documentNumber(), request.documentName(),
+                request.issueDate(), request.expiryDate(), request.issuingAuthority(), request.fileIndex()
+        );
+        return ResponseEntity.ok(propertyUseCase.uploadPropertyDocument(propertyId, command, file));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROPERTY_OWNER')")
+    @GetMapping("/properties/{propertyId}/documents")
+    public ResponseEntity<?> getPropertyDocuments(@PathVariable UUID propertyId) {
+        return ResponseEntity.ok(propertyUseCase.getPropertyDocuments(propertyId));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/properties/documents/{documentId}/verify")
+    public ResponseEntity<?> verifyPropertyDocument(
+            @PathVariable UUID documentId,
+            @Valid @RequestBody VerifyDocumentWebRequest request) {
+        VerifyDocumentCommand command = new VerifyDocumentCommand(request.status(), request.rejectionReason());
+        return ResponseEntity.ok(propertyUseCase.verifyPropertyDocument(documentId, command));
+    }
+
+    @GetMapping("/api/internal/property-types/ids")
+    public ResponseEntity<List<UUID>> getAllAvailablePropertyTypeIds() {
+        return ResponseEntity.ok(propertyUseCase.getAllAvailablePropertyTypeIds());
+    }
+
+    @GetMapping("/api/internal/properties/{propertyId}/location-info")
+    public ResponseEntity<PropertyUseCase.PropertyLocationInfo> getPropertyLocationInfo(@PathVariable UUID propertyId) {
+        return ResponseEntity.ok(propertyUseCase.getPropertyLocationInfo(propertyId));
+    }
 }

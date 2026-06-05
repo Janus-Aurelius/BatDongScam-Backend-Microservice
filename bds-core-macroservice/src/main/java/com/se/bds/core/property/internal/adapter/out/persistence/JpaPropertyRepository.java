@@ -38,6 +38,7 @@ public interface JpaPropertyRepository extends JpaRepository<Property, UUID> {
     and (:maxPrice is null or p.priceAmount <= :maxPrice)
     and (:minArea is null or p.area >= :minArea)
     and (:maxArea is null or p.area <= :maxArea)
+    and (coalesce(:propertyIds, NULL) IS NULL or p.id in :propertyIds)
 """)
     Page<Property> searchWithFilters(
             @Param("cityIds") List<UUID> cityIds, @Param("districtIds") List<UUID> districtIds,
@@ -45,6 +46,7 @@ public interface JpaPropertyRepository extends JpaRepository<Property, UUID> {
             @Param("ownerId") UUID ownerId, @Param("agentId") UUID agentId,
             @Param("minPrice")BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice,
             @Param("minArea") BigDecimal minArea, @Param("maxArea") BigDecimal maxArea,
+            @Param("propertyIds") List<UUID> propertyIds,
             Pageable pageable
             );
 }

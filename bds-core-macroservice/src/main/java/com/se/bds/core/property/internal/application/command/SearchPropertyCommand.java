@@ -20,6 +20,7 @@ public record SearchPropertyCommand(
         Integer bedrooms,
         Integer floors,
         String transactionType,
-        List<String> statuses
+        List<String> statuses,
+        Boolean topK
 ) {
 }

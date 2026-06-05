@@ -50,10 +50,10 @@ public class PropertyRepositoryAdapter implements PropertyRepository{
     public Page<Property> searchWithFilters(
             List<UUID> cityIds, List<UUID> districtIds, List<UUID> wardIds, List<UUID> propertyTypeIds,
             UUID ownerId, UUID agentId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,
-            java.math.BigDecimal minArea, java.math.BigDecimal maxArea, Pageable pageable) {
+            java.math.BigDecimal minArea, java.math.BigDecimal maxArea, List<UUID> propertyIds, Pageable pageable) {
         return propertyRepository.searchWithFilters(
                 cityIds, districtIds, wardIds, propertyTypeIds, ownerId, agentId,
-                minPrice, maxPrice, minArea, maxArea, pageable
+                minPrice, maxPrice, minArea, maxArea, propertyIds, pageable
         );
     }
 }

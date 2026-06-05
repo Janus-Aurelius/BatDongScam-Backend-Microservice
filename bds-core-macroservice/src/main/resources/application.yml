@@ -1,6 +1,16 @@
+server:
+  port: ${SERVER_PORT:8081}
+
 spring:
   application:
     name: core-macroservice
+  flyway:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     # Read from environment variables (e.g., from .env file loaded in the environment), fallback to local PG credentials
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
@@ -10,6 +20,7 @@ spring:
     init:
       mode: always
   jpa:
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
     show-sql: true
@@ -19,20 +30,19 @@ spring:
         # This tells Hibernate to automatically create schemas if they don't exist
         hbm2ddl.create_namespaces: true
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
 # Modulith allows us to log events passing between modules
 logging:
   level:
     org.springframework.modulith: DEBUG
 
 # External Services Integration
-payway:
-  service-url: ${PAYWAY_SERVICE_URL:http://localhost:3000}
-  api-key: ${PAYWAY_API_KEY:default-key}
-  merchant-id: ${PAYWAY_MERCHANT_ID:default-merchant}
-  verify-key: ${PAYWAY_VERIFY_KEY:default-verify-key}
-  webhook-base-url: ${PAYWAY_WEBHOOK_BASE_URL:http://localhost:8080}
-  return-url: ${PAYWAY_RETURN_URL:http://localhost:3000/return}
-
 cloudinary:
   cloud-name: ${CLOUD_NAME:default}
   api-key: ${CLOUDINARY_API_KEY:default}
@@ -40,3 +50,19 @@ cloudinary:
 
 encryption:
   key: ${ENCRYPTION_KEY:default-encryption-key-32-chars!!!}
+
+iam:
+  service-url: ${IAM_SERVICE_URL:http://localhost:8084}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      searchServiceCircuitBreaker:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+  retry:
+    instances:
+      searchServiceRetry:
+        maxAttempts: 3
+        waitDuration: 2000

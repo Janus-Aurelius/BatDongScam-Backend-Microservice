@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * and late-payment penalty logic.
  */
 @Entity
-@Table(name = "rental_contract")
+@Table(name = "rental_contract", schema = "transaction_workflow")
 @DiscriminatorValue("RENTAL")
 @Getter
 @Setter

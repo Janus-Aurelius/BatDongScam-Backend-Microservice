@@ -1,5 +1,6 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.enums.PaymentStatus;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.core.shared.enums.Role;
@@ -25,7 +26,7 @@ import java.util.*;
  * </ul>
  */
 @Entity
-@Table(name = "contract")
+@Table(name = "contract", schema = "transaction_workflow")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "contract_type", discriminatorType = DiscriminatorType.STRING)
 @Getter

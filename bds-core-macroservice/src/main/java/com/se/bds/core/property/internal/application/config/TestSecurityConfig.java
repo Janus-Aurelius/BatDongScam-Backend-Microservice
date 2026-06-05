@@ -21,7 +21,7 @@ public class TestSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**", "/webhooks/**").permitAll()
+                        .requestMatchers("/public/**", "/webhooks/**", "/api/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults()); // Dùng Basic Auth cho dễ test

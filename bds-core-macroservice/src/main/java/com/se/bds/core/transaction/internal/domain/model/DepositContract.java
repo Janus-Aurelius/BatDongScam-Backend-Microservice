@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  * {@link PurchaseContract} are preserved since they belong to the same module.
  */
 @Entity
-@Table(name = "deposit_contract")
+@Table(name = "deposit_contract", schema = "transaction_workflow")
 @DiscriminatorValue("DEPOSIT")
 @Getter
 @Setter

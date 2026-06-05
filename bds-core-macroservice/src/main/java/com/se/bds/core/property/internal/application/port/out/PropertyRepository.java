@@ -20,5 +20,5 @@ public interface PropertyRepository {
     Page<Property> searchWithFilters(
             List<UUID> cityIds, List<UUID> districtIds, List<UUID> wardIds, List<UUID> propertyTypeIds,
             UUID ownerId, UUID agentId, BigDecimal minPrice, BigDecimal maxPrice,
-            BigDecimal minArea, BigDecimal maxArea, Pageable pageable);
+            BigDecimal minArea, BigDecimal maxArea, List<UUID> propertyIds, Pageable pageable);
 }

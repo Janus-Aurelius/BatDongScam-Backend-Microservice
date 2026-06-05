@@ -21,4 +21,5 @@ class RentalContractRepositoryAdapter implements RentalContractRepository {
     @Override public List<RentalContract> findActiveByPropertyId(UUID propertyId) { return repository.findActiveByPropertyId(propertyId); }
     @Override public List<RentalContract> findByPdfStatus(com.se.bds.core.transaction.internal.domain.model.PdfStatus pdfStatus) { return repository.findByPdfStatus(pdfStatus); }
     @Override public List<RentalContract> findByPdfUrl(String pdfUrl) { return repository.findByPdfUrl(pdfUrl); }
+    @Override public List<RentalContract> findAllActive() { return repository.findAllActive(); }
 }

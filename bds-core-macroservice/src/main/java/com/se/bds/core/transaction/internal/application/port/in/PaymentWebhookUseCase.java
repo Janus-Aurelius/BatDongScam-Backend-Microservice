@@ -1,17 +1,18 @@
 package com.se.bds.core.transaction.internal.application.port.in;
 
+import com.se.bds.common.event.PaymentCompletedEvent;
+
 /**
- * Use case for processing payment gateway webhook events (US-011).
+ * Use case for processing payment completed events.
  */
 public interface PaymentWebhookUseCase {
 
     /**
-     * Processes a raw webhook payload from the payment gateway.
-     * Handles signature verification, event deduplication, and business side-effects.
+     * Processes a payment completed event consumed from Kafka.
+     * Updates payment and contract statuses, and publishes internal events.
      *
-     * @param rawBody   the raw HTTP request body
-     * @param signature the X-Signature header value (may be null)
-     * @return true if the event was accepted and processed, false if rejected
+     * @param event the standardized payment completed event
+     * @return true if successfully processed
      */
-    boolean processWebhook(String rawBody, String signature);
+    boolean processPaymentCompleted(PaymentCompletedEvent event);
 }

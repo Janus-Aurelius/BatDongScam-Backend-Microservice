@@ -7,7 +7,7 @@ import com.se.bds.core.transaction.internal.application.port.in.PaymentInitializ
 import com.se.bds.core.transaction.internal.application.port.out.PaymentGatewayPort;
 import com.se.bds.core.transaction.internal.application.port.out.PaymentRepository;
 import com.se.bds.core.transaction.internal.domain.model.Payment;
-import com.se.bds.core.transaction.internal.domain.model.PaymentStatus;
+import com.se.bds.common.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -59,11 +59,11 @@ public class PaymentInitializationService implements PaymentInitializationUseCas
         );
 
         // Update payment record
-        payment.setPaywayPaymentId(sessionResult.gatewayPaymentId());
+        payment.setStripeSessionId(sessionResult.gatewayPaymentId());
         payment.setStatus(PaymentStatus.PENDING);
         paymentRepository.save(payment);
 
-        log.info("[EVENT] Payment session updated in db: paymentId={}, paywayPaymentId={}", paymentId, sessionResult.gatewayPaymentId());
+        log.info("[EVENT] Payment session updated in db: paymentId={}, stripeSessionId={}", paymentId, sessionResult.gatewayPaymentId());
 
         return new PaymentInitResult(
                 payment.getId(),

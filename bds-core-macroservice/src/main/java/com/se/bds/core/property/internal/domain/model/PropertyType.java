@@ -16,7 +16,7 @@ import java.util.UUID;
  * has been removed — the owning side ({@code Property.propertyType}) is sufficient.
  */
 @Entity
-@Table(name = "property_types")
+@Table(name = "property_types", schema = "property_catalog")
 @Builder
 @Getter
 @Setter

@@ -14,7 +14,7 @@ import java.util.UUID;
  * <p>Records are kept for audit purposes with a recommended 7-day cleanup policy.
  */
 @Entity
-@Table(name = "processed_webhook_event", indexes = {
+@Table(name = "processed_webhook_event", schema = "transaction_workflow", indexes = {
         @Index(name = "idx_webhook_external_event_id", columnList = "external_event_id", unique = true)
 })
 @Getter

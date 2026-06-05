@@ -1,5 +1,6 @@
 package com.se.bds.core.transaction.internal.domain.model;
 
+import com.se.bds.common.enums.PaymentStatus;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.message.validation.MSG12;
 import jakarta.persistence.*;
@@ -11,7 +12,7 @@ import java.math.BigDecimal;
  * A purchase (sale) contract representing a one-time property transfer.
  */
 @Entity
-@Table(name = "purchase_contract")
+@Table(name = "purchase_contract", schema = "transaction_workflow")
 @DiscriminatorValue("PURCHASE")
 @Getter
 @Setter

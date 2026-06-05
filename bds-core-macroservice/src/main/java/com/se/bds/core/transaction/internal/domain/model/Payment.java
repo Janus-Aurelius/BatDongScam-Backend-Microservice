@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.se.bds.common.enums.PaymentType;
+import com.se.bds.common.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,7 +23,7 @@ import java.util.UUID;
  * </ul>
  */
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", schema = "transaction_workflow")
 @Builder
 @Getter
 @Setter
@@ -84,8 +86,8 @@ public class Payment {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "payway_payment_id", unique = true, length = 36)
-    private String paywayPaymentId;
+    @Column(name = "stripe_session_id", unique = true, length = 255)
+    private String stripeSessionId;
 
     // ── Audit fields ───────────────────────────────────────────────────
 

@@ -18,7 +18,7 @@ import java.util.UUID;
  * <p>A customer may only submit one review per contract.
  */
 @Entity
-@Table(name = "agent_review", uniqueConstraints = {
+@Table(name = "agent_review", schema = "transaction_workflow", uniqueConstraints = {
         @UniqueConstraint(name = "uk_agent_review_contract", columnNames = {"contract_id"})
 })
 @Getter

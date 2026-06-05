@@ -1,0 +1,105 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 10000
+      routes:
+        # Search Service
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=/api/search/**
+        # Notification Service
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+        # IAM Service
+        - id: iam-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+        # Appointment Service
+        - id: appointment-service
+          uri: lb://appointment-service
+          predicates:
+            - Path=/api/appointment/**
+        # Financial Service
+        - id: financial-service
+          uri: lb://financial-service
+          predicates:
+            - Path=/api/payments/**, /api/commissions/**, /webhooks/**
+        # Moderation Service
+        - id: moderation-service
+          uri: lb://moderation-service
+          predicates:
+            - Path=/api/violations/**
+        # Core Macroservice (Catch all)
+        - id: core-service
+          uri: lb://core-macroservice
+          predicates:
+            - Path=/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders:
+              - Authorization
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+app:
+  secret: ${APP_SECRET:BatDongScamSecretKeyForJWTTokenAtLeast256BitsLong!!}
+  jwks-uri: ${JWKS_URI:http://localhost:8084/api/auth/jwks}
+  public-paths:
+    - /
+    - /assets/**
+    - /ws/**
+    - /debug/**
+    - /bookings/payment/**
+    - /public/**
+    - /auth/**
+    - /api-docs/**
+    - /swagger-ui/**
+    - /webjars/**
+    - /webhooks/**
+    - /actuator/**
+    - /api/search/**
+
+logging:
+  level:
+    root: INFO
+    com.se100.bds.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, info

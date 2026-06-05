@@ -72,7 +72,7 @@ public class EscrowService implements EscrowUseCase {
         hold.releaseToOwner(adminUserId, reason);
         EscrowHold saved = escrowRepository.save(hold);
 
-        // TODO: end-to-end escrow hold/release cycle with Payway sandbox
+        // TODO: end-to-end escrow hold/release cycle with Stripe sandbox
         
         paymentGatewayPort.createPayoutSession(
                 hold.getHoldAmount(),
@@ -97,7 +97,7 @@ public class EscrowService implements EscrowUseCase {
         hold.returnToCustomer(adminUserId, reason);
         EscrowHold saved = escrowRepository.save(hold);
 
-        // TODO: end-to-end escrow hold/release cycle with Payway sandbox
+        // TODO: end-to-end escrow hold/release cycle with Stripe sandbox
 
         paymentGatewayPort.createPayoutSession(
                 hold.getHoldAmount(),
@@ -123,7 +123,7 @@ public class EscrowService implements EscrowUseCase {
         hold.partialRelease(deductionAmount, adminUserId, reason);
         EscrowHold saved = escrowRepository.save(hold);
 
-        // TODO: end-to-end escrow hold/release cycle with Payway sandbox
+        // TODO: end-to-end escrow hold/release cycle with Stripe sandbox
 
         BigDecimal returnAmount = hold.getReleasedAmount();
         if (returnAmount.compareTo(BigDecimal.ZERO) > 0) {
@@ -164,7 +164,7 @@ public class EscrowService implements EscrowUseCase {
         hold.forfeit(adminUserId, reason);
         EscrowHold saved = escrowRepository.save(hold);
 
-        // TODO: end-to-end escrow hold/release cycle with Payway sandbox
+        // TODO: end-to-end escrow hold/release cycle with Stripe sandbox
 
         paymentGatewayPort.createPayoutSession(
                 hold.getHoldAmount(),

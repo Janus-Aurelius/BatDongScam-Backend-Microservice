@@ -17,4 +17,21 @@ public interface JpaContractRepository extends JpaRepository<Contract, UUID> {
     List<Contract> findBySignedAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Contract> findByPropertyId(UUID propertyId);
+
+    @Query("""
+    SELECT c FROM Contract c
+    WHERE (:customerId IS NULL OR c.customerId = :customerId)
+      AND (:agentId IS NULL OR c.agentId = :agentId)
+      AND (:propertyId IS NULL OR c.propertyId = :propertyId)
+      AND (:status IS NULL OR c.status = :status)
+      AND (:contractType IS NULL OR c.contractType = :contractType)
+    """)
+    org.springframework.data.domain.Page<Contract> findAllWithFilters(
+            @Param("customerId") UUID customerId,
+            @Param("agentId") UUID agentId,
+            @Param("propertyId") UUID propertyId,
+            @Param("status") com.se.bds.core.transaction.internal.domain.model.ContractStatus status,
+            @Param("contractType") com.se.bds.core.transaction.internal.domain.model.ContractType contractType,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -31,7 +31,7 @@ import java.util.*;
  * </ul>
  */
 @Entity
-@Table(name = "properties")
+@Table(name = "properties", schema = "property_catalog")
 @Builder
 @Getter
 @Setter
@@ -146,6 +146,10 @@ public class Property {
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Media> mediaList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<IdentificationDocument> documents = new ArrayList<>();
 
     // ── Audit fields ───────────────────────────────────────────────────
 

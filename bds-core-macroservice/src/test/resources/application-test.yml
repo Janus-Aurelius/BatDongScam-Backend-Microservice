@@ -11,11 +11,6 @@ spring:
         format_sql: false
 
 # Disable or Mock External Services for Testing
-payway:
-  service-url: http://localhost:8080/mock/payway
-  api-key: test-api-key
-  merchant-id: test-merchant
-
 cloudinary:
   cloud-name: test-cloud
   api-key: test-key
@@ -25,3 +20,7 @@ logging:
   level:
     root: INFO
     com.se.bds.core: DEBUG
+
+iam:
+  service-url: http://localhost:8081/mock/iam
+
