@@ -1,8 +1,6 @@
 package microservices.moderationservice.moderation.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.se.bds.common.dto.ApiResponse;
-import com.se.bds.common.dto.PagedData;
 import com.se.bds.common.enums.*;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.event.ViolationPenaltyAppliedEvent;
@@ -14,9 +12,13 @@ import microservices.moderationservice.client.IamServiceClient;
 import microservices.moderationservice.moderation.dto.request.UpdateViolationRequest;
 import microservices.moderationservice.moderation.dto.request.ViolationCreateRequest;
 import microservices.moderationservice.moderation.dto.response.*;
+import microservices.moderationservice.moderation.entity.OutboxEvent;
+import microservices.moderationservice.moderation.entity.PropertyReplica;
 import microservices.moderationservice.moderation.entity.ViolationReport;
 import microservices.moderationservice.moderation.entity.ViolationEvidence;
 import microservices.moderationservice.moderation.mapper.ViolationMapper;
+import microservices.moderationservice.moderation.repository.OutboxEventRepository;
+import microservices.moderationservice.moderation.repository.PropertyReplicaRepository;
 import microservices.moderationservice.moderation.repository.ViolationRepository;
 import microservices.moderationservice.moderation.repository.mongo.ViolationReportDetailsRepository;
 import microservices.moderationservice.moderation.scheduler.ViolationReportScheduler;
@@ -27,7 +29,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -36,11 +37,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -53,8 +54,9 @@ public class ViolationServiceImpl implements ViolationService {
     private final IamServiceClient iamServiceClient;
     private final ViolationReportDetailsRepository violationReportDetailsRepository;
     private final ViolationReportScheduler violationReportScheduler;
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboxEventRepository outboxEventRepository;
+    private final PropertyReplicaRepository propertyReplicaRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -463,16 +465,12 @@ public class ViolationServiceImpl implements ViolationService {
         try {
             UUID reportedUserId = null;
             if (violation.getRelatedEntityType() == ViolationReportedTypeEnum.PROPERTY) {
-                try {
-                    var propertyDetails = coreServiceClient.getPropertyDetails(violation.getRelatedEntityId());
-                    if (propertyDetails != null && propertyDetails.containsKey("ownerId")) {
-                        Object ownerIdVal = propertyDetails.get("ownerId");
-                        if (ownerIdVal != null) {
-                            reportedUserId = UUID.fromString(ownerIdVal.toString());
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.error("Failed to retrieve ownerId for reported property {}", violation.getRelatedEntityId(), ex);
+                reportedUserId = propertyReplicaRepository
+                        .findById(violation.getRelatedEntityId())
+                        .map(PropertyReplica::getOwnerId)
+                        .orElse(null);
+                if (reportedUserId == null) {
+                    log.warn("Cannot find ownerId for property {} in local replica", violation.getRelatedEntityId());
                 }
             } else {
                 reportedUserId = violation.getRelatedEntityId();
@@ -490,10 +488,23 @@ public class ViolationServiceImpl implements ViolationService {
             );
 
             String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send("violation-penalty-applied", violation.getRelatedEntityId().toString(), payload);
-            log.info("Successfully published ViolationPenaltyAppliedEvent to Kafka: {}", payload);
+
+            // lưu vào outbox thay vì kafkaTemplate.send()
+            // Cùng transaction với violationRepository.save() ở updateViolationReport()
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .topic("violation-penalty-applied")
+                    .aggregateId(violation.getRelatedEntityId().toString())
+                    .payload(payload)
+                    .build();
+
+            outboxEventRepository.save(outboxEvent);
+            log.info("[Outbox] Saved ViolationPenaltyAppliedEvent for violationId={}", violation.getId());
+
         } catch (Exception ex) {
-            log.error("Failed to publish ViolationPenaltyAppliedEvent to Kafka", ex);
+            // Ném lỗi để rollback cả transaction updateViolationReport()
+            // Đảm bảo: không có trạng thái RESOLVED mà không có outbox record
+            throw new RuntimeException(
+                    "Failed to save penalty event to outbox for violationId=" + violation.getId(), ex);
         }
     }
 
