@@ -209,7 +209,7 @@ public class RentalContractServiceImpl implements RentalContractUseCase {
 
     private void publishStatusEvent(RentalContract contract, ContractStatus oldStatus, ContractStatus newStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(
-                new ContractId(contract.getId()), ContractType.RENTAL.name(), contract.getPropertyId(), oldStatus.name(), newStatus.name(), Instant.now()
+                new ContractId(contract.getId()), ContractType.RENTAL.name(), contract.getPropertyId(), contract.getCustomerId(), oldStatus.name(), newStatus.name(), Instant.now()
         ));
     }
 

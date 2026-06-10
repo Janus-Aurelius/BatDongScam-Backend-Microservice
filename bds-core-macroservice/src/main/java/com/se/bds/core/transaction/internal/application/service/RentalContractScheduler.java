@@ -246,6 +246,7 @@ public class RentalContractScheduler {
                 new ContractId(contract.getId()),
                 "RENTAL",
                 contract.getPropertyId(),
+                contract.getCustomerId(),
                 oldStatus.name(),
                 ContractStatus.COMPLETED.name(),
                 Instant.now()

@@ -145,7 +145,7 @@ public class DepositContractServiceImpl implements DepositContractUseCase {
     private void publishStatusEvent(DepositContract contract, ContractStatus oldStatus, ContractStatus contractStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(
                 new ContractId(contract.getId()), ContractType.DEPOSIT.name(), contract.getPropertyId(),
-                        oldStatus.name(), contractStatus.name(), Instant.now()
+                        contract.getCustomerId(), oldStatus.name(), contractStatus.name(), Instant.now()
         ));
     }
 

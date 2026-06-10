@@ -4,14 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.se.bds.common.enums.NotificationTypeEnum;
 import com.se.bds.common.enums.RelatedEntityTypeEnum;
-import com.se100.bds.notificationservice.client.CoreServiceClient;
 import com.se100.bds.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -20,7 +18,6 @@ import java.util.UUID;
 public class KafkaNotificationListener {
 
     private final NotificationService notificationService;
-    private final CoreServiceClient coreServiceClient;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "contract-status-changed", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
@@ -39,26 +36,25 @@ public class KafkaNotificationListener {
             }
             String contractType = node.has("contractType") ? node.get("contractType").asText() : "";
             String newStatus = node.has("newStatus") ? node.get("newStatus").asText() : "";
+            UUID customerId = node.has("customerId") && !node.get("customerId").isNull()
+                    ? UUID.fromString(node.get("customerId").asText())
+                    : null;
 
-            if (contractId != null) {
-                Map<String, Object> contract = coreServiceClient.getContractById(contractId);
-                if (contract != null && contract.containsKey("customerId") && contract.get("customerId") != null) {
-                    UUID customerId = UUID.fromString(contract.get("customerId").toString());
-                    String title = "Contract Status Updated";
-                    String body = String.format("Your %s contract status is now %s.", contractType.toLowerCase(), newStatus.toLowerCase());
-                    notificationService.createNotification(
-                            customerId,
-                            null,
-                            NotificationTypeEnum.CONTRACT_UPDATE,
-                            title,
-                            body,
-                            RelatedEntityTypeEnum.CONTRACT,
-                            contractId.toString(),
-                            null
-                    );
-                } else {
-                    log.warn("Contract customer ID not found for contract {}", contractId);
-                }
+            if (contractId != null && customerId != null) {
+                String title = "Contract Status Updated";
+                String body = String.format("Your %s contract status is now %s.", contractType.toLowerCase(), newStatus.toLowerCase());
+                notificationService.createNotification(
+                        customerId,
+                        null,
+                        NotificationTypeEnum.CONTRACT_UPDATE,
+                        title,
+                        body,
+                        RelatedEntityTypeEnum.CONTRACT,
+                        contractId.toString(),
+                        null
+                );
+            } else {
+                log.warn("Contract status event missing contractId or customerId: contractId={}, customerId={}", contractId, customerId);
             }
         } catch (Exception e) {
             log.error("Error processing contract-status-changed event", e);

@@ -1,7 +1,10 @@
 package com.se.bds.core.shared.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.se.bds.common.event.PropertyCreatedEvent;
+import com.se.bds.common.event.PropertyDeletedEvent;
 import com.se.bds.common.event.PropertySearchedEvent;
+import com.se.bds.common.event.PropertyUpdatedEvent;
 import com.se.bds.core.property.api.event.*;
 import com.se.bds.core.shared.event.ContractStatusChangedEvent;
 import com.se.bds.core.shared.event.PaymentCompletedEvent;
@@ -31,17 +34,17 @@ public class KafkaEventBridge {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyCreated(PropertyCreatedIntegrationEvent event) {
+    public void handlePropertyCreated(PropertyCreatedEvent event) {
         publish("property-created", event.propertyId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyUpdated(PropertyUpdatedIntegrationEvent event) {
+    public void handlePropertyUpdated(PropertyUpdatedEvent event) {
         publish("property-updated", event.propertyId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyDeleted(PropertyDeletedIntegrationEvent event) {
+    public void handlePropertyDeleted(PropertyDeletedEvent event) {
         publish("property-deleted", event.propertyId().toString(), event);
     }
 

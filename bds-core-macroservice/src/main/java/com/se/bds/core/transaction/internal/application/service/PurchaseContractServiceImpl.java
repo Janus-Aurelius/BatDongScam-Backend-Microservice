@@ -189,6 +189,6 @@ public class PurchaseContractServiceImpl implements PurchaseContractUseCase {
     }
     private void publishStatusEvent(PurchaseContract contract, ContractStatus oldStatus, ContractStatus newStatus) {
         eventPublisher.publishEvent(new ContractStatusChangedEvent(new ContractId(contract.getId()),
-                ContractType.PURCHASE.name(), contract.getPropertyId(), oldStatus.name(), newStatus.name(), Instant.now()));
+                ContractType.PURCHASE.name(), contract.getPropertyId(), contract.getCustomerId(), oldStatus.name(), newStatus.name(), Instant.now()));
     }
 }

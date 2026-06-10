@@ -9,16 +9,18 @@ import com.se.bds.common.event.ViolationPenaltyAppliedEvent;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import microservices.moderationservice.client.CoreServiceClient;
-import microservices.moderationservice.client.IamServiceClient;
 import microservices.moderationservice.moderation.dto.request.UpdateViolationRequest;
 import microservices.moderationservice.moderation.dto.request.ViolationCreateRequest;
 import microservices.moderationservice.moderation.dto.response.*;
+import microservices.moderationservice.moderation.entity.replica.PropertyReplica;
+import microservices.moderationservice.moderation.entity.replica.UserReplica;
 import microservices.moderationservice.moderation.entity.ViolationReport;
 import microservices.moderationservice.moderation.entity.ViolationEvidence;
 import microservices.moderationservice.moderation.mapper.ViolationMapper;
 import microservices.moderationservice.moderation.repository.ViolationRepository;
 import microservices.moderationservice.moderation.repository.mongo.ViolationReportDetailsRepository;
+import microservices.moderationservice.moderation.repository.replica.PropertyReplicaRepository;
+import microservices.moderationservice.moderation.repository.replica.UserReplicaRepository;
 import microservices.moderationservice.moderation.scheduler.ViolationReportScheduler;
 import microservices.moderationservice.moderation.schema.ViolationReportDetails;
 import microservices.moderationservice.moderation.service.ViolationService;
@@ -33,14 +35,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -49,8 +50,8 @@ public class ViolationServiceImpl implements ViolationService {
     private final ViolationRepository violationRepository;
     private final ViolationMapper violationMapper;
     private final FileStorageService fileStorageService;
-    private final CoreServiceClient coreServiceClient;
-    private final IamServiceClient iamServiceClient;
+    private final PropertyReplicaRepository propertyReplicaRepository;
+    private final UserReplicaRepository userReplicaRepository;
     private final ViolationReportDetailsRepository violationReportDetailsRepository;
     private final ViolationReportScheduler violationReportScheduler;
     private final KafkaTemplate<String, String> kafkaTemplate;
@@ -95,17 +96,13 @@ public class ViolationServiceImpl implements ViolationService {
         };
 
         Page<ViolationReport> violations = violationRepository.findAll(spec, pageable);
+        ReplicaLookup replicaLookup = loadReplicaLookup(violations.getContent());
         List<ViolationAdminItem> items = violations.getContent().stream()
                 .map(v -> {
                     ViolationAdminItem item = violationMapper.toAdminItem(v);
-                    enrichReporterInfo(v.getReporterId(), (n, a) -> {
-                        item.setReporterName(n);
-                        item.setReporterAvatarUrl(a);
-                    });
-                    enrichReportedInfo(v.getRelatedEntityId(), v.getRelatedEntityType(), (n, a) -> {
-                        item.setReportedName(n);
-                        item.setReportedAvatarUrl(a);
-                    }, null);
+                    applyReporterInfo(replicaLookup.users(), v.getReporterId(), item::setReporterName, item::setReporterAvatarUrl);
+                    applyReportedInfo(replicaLookup, v.getRelatedEntityId(), v.getRelatedEntityType(),
+                            item::setReportedName, item::setReportedAvatarUrl, null);
                     return item;
                 })
                 .toList();
@@ -125,17 +122,13 @@ public class ViolationServiceImpl implements ViolationService {
                 criteriaBuilder.equal(root.get("reporterId"), currentUserId);
 
         Page<ViolationReport> violations = violationRepository.findAll(spec, pageable);
+        ReplicaLookup replicaLookup = loadReplicaLookup(violations.getContent());
         List<ViolationUserItem> items = violations.getContent().stream()
                 .map(v -> {
                     ViolationUserItem item = violationMapper.toUserItem(v);
-                    enrichReporterInfo(v.getReporterId(), (n, a) -> {
-                        item.setReporterName(n);
-                        item.setReporterAvatarUrl(a);
-                    });
-                    enrichReportedInfo(v.getRelatedEntityId(), v.getRelatedEntityType(), (n, a) -> {
-                        item.setReportedName(n);
-                        item.setReportedAvatarUrl(a);
-                    }, null);
+                    applyReporterInfo(replicaLookup.users(), v.getReporterId(), item::setReporterName, item::setReporterAvatarUrl);
+                    applyReportedInfo(replicaLookup, v.getRelatedEntityId(), v.getRelatedEntityType(),
+                            item::setReportedName, item::setReportedAvatarUrl, null);
                     return item;
                 })
                 .toList();
@@ -159,14 +152,10 @@ public class ViolationServiceImpl implements ViolationService {
         }
 
         ViolationUserDetails details = violationMapper.toUserDetails(violation);
-        enrichReporterInfo(violation.getReporterId(), (n, a) -> {
-            details.setReporterName(n);
-            details.setReporterAvatarUrl(a);
-        });
-        enrichReportedInfo(violation.getRelatedEntityId(), violation.getRelatedEntityType(), (n, a) -> {
-            details.setReportedName(n);
-            details.setReportedAvatarUrl(a);
-        }, null);
+        ReplicaLookup replicaLookup = loadReplicaLookup(List.of(violation));
+        applyReporterInfo(replicaLookup.users(), violation.getReporterId(), details::setReporterName, details::setReporterAvatarUrl);
+        applyReportedInfo(replicaLookup, violation.getRelatedEntityId(), violation.getRelatedEntityType(),
+                details::setReportedName, details::setReportedAvatarUrl, null);
         return details;
     }
 
@@ -177,14 +166,10 @@ public class ViolationServiceImpl implements ViolationService {
                 .orElseThrow(() -> new BusinessException("VIOLATION_NOT_FOUND", "Violation not found: " + id));
 
         ViolationAdminDetails details = violationMapper.toAdminDetails(violation);
-        enrichReporterInfo(violation.getReporterId(), (n, a) -> {
-            details.setReporterName(n);
-            details.setReporterAvatarUrl(a);
-        });
-        enrichReportedInfo(violation.getRelatedEntityId(), violation.getRelatedEntityType(), (n, a) -> {
-            details.setReportedName(n);
-            details.setReportedAvatarUrl(a);
-        }, d -> {
+        ReplicaLookup replicaLookup = loadReplicaLookup(List.of(violation));
+        applyReporterInfo(replicaLookup.users(), violation.getReporterId(), details::setReporterName, details::setReporterAvatarUrl);
+        applyReportedInfo(replicaLookup, violation.getRelatedEntityId(), violation.getRelatedEntityType(),
+                details::setReportedName, details::setReportedAvatarUrl, d -> {
             details.setReportedRole(d.get("role"));
             details.setReportedEmail(d.get("email"));
             details.setReportedPhoneNumber(d.get("phoneNumber"));
@@ -350,16 +335,11 @@ public class ViolationServiceImpl implements ViolationService {
 
     private void validateReportedEntity(UUID reportedId, ViolationReportedTypeEnum reportedType) {
         if (reportedType == ViolationReportedTypeEnum.PROPERTY) {
-            try {
-                var locationInfo = coreServiceClient.getPropertyLocationInfo(reportedId);
-                if (locationInfo == null) {
-                    throw new BusinessException("PROPERTY_NOT_FOUND", "Reported property not found: " + reportedId);
-                }
-            } catch (feign.FeignException.NotFound ex) {
+            boolean propertyExists = propertyReplicaRepository.findById(reportedId)
+                    .filter(property -> property.getStatus() == null || !"DELETED".equalsIgnoreCase(property.getStatus()))
+                    .isPresent();
+            if (!propertyExists) {
                 throw new BusinessException("PROPERTY_NOT_FOUND", "Reported property not found: " + reportedId);
-            } catch (Exception ex) {
-                log.error("Failed to connect to core-macroservice for property validation", ex);
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Validation service unavailable");
             }
         } else {
             String roleName = switch (reportedType) {
@@ -368,94 +348,85 @@ public class ViolationServiceImpl implements ViolationService {
                 case PROPERTY_OWNER -> "PROPERTY_OWNER";
                 default -> throw new BusinessException("UNSUPPORTED_ENTITY_TYPE", "Unsupported reported entity type: " + reportedType);
             };
-            try {
-                var validationResult = iamServiceClient.validateUser(reportedId, roleName);
-                if (validationResult == null || !Boolean.TRUE.equals(validationResult.get("active"))) {
-                    throw new BusinessException("USER_NOT_FOUND", "Reported user not found or inactive: " + reportedId);
-                }
-            } catch (feign.FeignException.NotFound ex) {
-                throw new BusinessException("USER_NOT_FOUND", "Reported user not found: " + reportedId);
-            } catch (Exception ex) {
-                log.error("Failed to connect to iam-service for user validation", ex);
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Validation service unavailable");
+            boolean userExists = userReplicaRepository.findById(reportedId)
+                    .filter(user -> Boolean.TRUE.equals(user.getActive()))
+                    .filter(user -> user.getRole() != null && user.getRole().equalsIgnoreCase(roleName))
+                    .isPresent();
+            if (!userExists) {
+                throw new BusinessException("USER_NOT_FOUND", "Reported user not found or inactive: " + reportedId);
             }
         }
     }
 
-    private void enrichReporterInfo(UUID reporterId, java.util.function.BiConsumer<String, String> nameAndAvatarSetter) {
-        if (reporterId == null) return;
-        try {
-            var userResponse = iamServiceClient.getUserDetails(reporterId);
-            if (userResponse != null && Boolean.TRUE.equals(userResponse.get("success"))) {
-                var data = (Map<String, Object>) userResponse.get("data");
-                if (data != null) {
-                    String name = (String) data.get("fullName");
-                    if (name == null) {
-                        String first = (String) data.get("firstName");
-                        String last = (String) data.get("lastName");
-                        name = (first != null ? first : "") + " " + (last != null ? last : "");
-                    }
-                    String avatar = (String) data.get("avatarUrl");
-                    nameAndAvatarSetter.accept(name.trim(), avatar);
-                    return;
-                }
+    private ReplicaLookup loadReplicaLookup(List<ViolationReport> violations) {
+        Set<UUID> userIds = new HashSet<>();
+        Set<UUID> propertyIds = new HashSet<>();
+
+        for (ViolationReport violation : violations) {
+            if (violation.getReporterId() != null) {
+                userIds.add(violation.getReporterId());
             }
-        } catch (Exception ex) {
-            log.warn("Failed to enrich reporter info for user {}: {}", reporterId, ex.getMessage());
+            if (violation.getRelatedEntityId() == null) {
+                continue;
+            }
+            if (violation.getRelatedEntityType() == ViolationReportedTypeEnum.PROPERTY) {
+                propertyIds.add(violation.getRelatedEntityId());
+            } else {
+                userIds.add(violation.getRelatedEntityId());
+            }
         }
-        nameAndAvatarSetter.accept("Unknown User", null);
+
+        Map<UUID, UserReplica> users = new HashMap<>();
+        userReplicaRepository.findAllById(userIds).forEach(user -> users.put(user.getId(), user));
+
+        Map<UUID, PropertyReplica> properties = new HashMap<>();
+        propertyReplicaRepository.findAllById(propertyIds).forEach(property -> properties.put(property.getId(), property));
+
+        return new ReplicaLookup(users, properties);
     }
 
-    private void enrichReportedInfo(UUID reportedId, ViolationReportedTypeEnum reportedType, 
-                                    java.util.function.BiConsumer<String, String> nameAndAvatarSetter,
-                                    java.util.function.Consumer<Map<String, String>> detailsSetter) {
-        if (reportedId == null) return;
+    private void applyReporterInfo(
+            Map<UUID, UserReplica> users,
+            UUID reporterId,
+            Consumer<String> nameSetter,
+            Consumer<String> avatarSetter
+    ) {
+        UserReplica user = reporterId != null ? users.get(reporterId) : null;
+        nameSetter.accept(user != null && user.getFullName() != null ? user.getFullName() : "Unknown User");
+        avatarSetter.accept(user != null ? user.getAvatarUrl() : null);
+    }
+
+    private void applyReportedInfo(
+            ReplicaLookup replicaLookup,
+            UUID reportedId,
+            ViolationReportedTypeEnum reportedType,
+            Consumer<String> nameSetter,
+            Consumer<String> avatarSetter,
+            Consumer<Map<String, String>> detailsSetter
+    ) {
+        if (reportedId == null) {
+            return;
+        }
         if (reportedType == ViolationReportedTypeEnum.PROPERTY) {
-            try {
-                var propertyDetails = coreServiceClient.getPropertyDetails(reportedId);
-                if (propertyDetails != null) {
-                    String title = (String) propertyDetails.get("title");
-                    String thumbnailUrl = (String) propertyDetails.get("thumbnailUrl");
-                    nameAndAvatarSetter.accept(title != null ? title : "Unknown Property", thumbnailUrl);
-                    if (detailsSetter != null) {
-                        Map<String, String> details = new HashMap<>();
-                        details.put("title", title);
-                        detailsSetter.accept(details);
-                    }
-                    return;
-                }
-            } catch (Exception ex) {
-                log.warn("Failed to enrich property info for property {}: {}", reportedId, ex.getMessage());
+            PropertyReplica property = replicaLookup.properties().get(reportedId);
+            nameSetter.accept(property != null && property.getTitle() != null ? property.getTitle() : "Unknown Property");
+            avatarSetter.accept(property != null ? property.getThumbnailUrl() : null);
+            if (detailsSetter != null) {
+                Map<String, String> details = new HashMap<>();
+                details.put("title", property != null ? property.getTitle() : null);
+                detailsSetter.accept(details);
             }
-            nameAndAvatarSetter.accept("Unknown Property", null);
         } else {
-            try {
-                var userResponse = iamServiceClient.getUserDetails(reportedId);
-                if (userResponse != null && Boolean.TRUE.equals(userResponse.get("success"))) {
-                    var data = (Map<String, Object>) userResponse.get("data");
-                    if (data != null) {
-                        String name = (String) data.get("fullName");
-                        if (name == null) {
-                            String first = (String) data.get("firstName");
-                            String last = (String) data.get("lastName");
-                            name = (first != null ? first : "") + " " + (last != null ? last : "");
-                        }
-                        String avatar = (String) data.get("avatarUrl");
-                        nameAndAvatarSetter.accept(name.trim(), avatar);
-                        if (detailsSetter != null) {
-                            Map<String, String> details = new HashMap<>();
-                            details.put("role", data.get("role") != null ? data.get("role").toString() : "");
-                            details.put("email", data.get("email") != null ? data.get("email").toString() : "");
-                            details.put("phoneNumber", data.get("phoneNumber") != null ? data.get("phoneNumber").toString() : "");
-                            detailsSetter.accept(details);
-                        }
-                        return;
-                    }
-                }
-            } catch (Exception ex) {
-                log.warn("Failed to enrich user info for reported user {}: {}", reportedId, ex.getMessage());
+            UserReplica user = replicaLookup.users().get(reportedId);
+            nameSetter.accept(user != null && user.getFullName() != null ? user.getFullName() : "Unknown User");
+            avatarSetter.accept(user != null ? user.getAvatarUrl() : null);
+            if (detailsSetter != null) {
+                Map<String, String> details = new HashMap<>();
+                details.put("role", user != null && user.getRole() != null ? user.getRole() : "");
+                details.put("email", user != null && user.getEmail() != null ? user.getEmail() : "");
+                details.put("phoneNumber", user != null && user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+                detailsSetter.accept(details);
             }
-            nameAndAvatarSetter.accept("Unknown User", null);
         }
     }
 
@@ -463,17 +434,9 @@ public class ViolationServiceImpl implements ViolationService {
         try {
             UUID reportedUserId = null;
             if (violation.getRelatedEntityType() == ViolationReportedTypeEnum.PROPERTY) {
-                try {
-                    var propertyDetails = coreServiceClient.getPropertyDetails(violation.getRelatedEntityId());
-                    if (propertyDetails != null && propertyDetails.containsKey("ownerId")) {
-                        Object ownerIdVal = propertyDetails.get("ownerId");
-                        if (ownerIdVal != null) {
-                            reportedUserId = UUID.fromString(ownerIdVal.toString());
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.error("Failed to retrieve ownerId for reported property {}", violation.getRelatedEntityId(), ex);
-                }
+                reportedUserId = propertyReplicaRepository.findById(violation.getRelatedEntityId())
+                        .map(PropertyReplica::getOwnerId)
+                        .orElse(null);
             } else {
                 reportedUserId = violation.getRelatedEntityId();
             }
@@ -495,6 +458,12 @@ public class ViolationServiceImpl implements ViolationService {
         } catch (Exception ex) {
             log.error("Failed to publish ViolationPenaltyAppliedEvent to Kafka", ex);
         }
+    }
+
+    private record ReplicaLookup(
+            Map<UUID, UserReplica> users,
+            Map<UUID, PropertyReplica> properties
+    ) {
     }
 
     private UUID resolveReporterId(ViolationCreateRequest request) {

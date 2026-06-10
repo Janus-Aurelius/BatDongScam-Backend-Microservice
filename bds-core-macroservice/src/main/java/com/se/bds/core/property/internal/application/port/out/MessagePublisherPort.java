@@ -1,14 +1,14 @@
 package com.se.bds.core.property.internal.application.port.out;
 
-import com.se.bds.core.property.api.event.PropertyCreatedIntegrationEvent;
-import com.se.bds.core.property.api.event.PropertyDeletedIntegrationEvent;
-import com.se.bds.core.property.api.event.PropertyUpdatedIntegrationEvent;
+import com.se.bds.common.event.PropertyCreatedEvent;
+import com.se.bds.common.event.PropertyDeletedEvent;
+import com.se.bds.common.event.PropertyUpdatedEvent;
 
 /**
  * Port for publishing integration events related to properties.
  */
 public interface MessagePublisherPort {
-    void publishPropertyCreated(PropertyCreatedIntegrationEvent event);
-    void publishPropertyUpdated(PropertyUpdatedIntegrationEvent event);
-    void publishPropertyDeleted(PropertyDeletedIntegrationEvent event);
+    void publishPropertyCreated(PropertyCreatedEvent event);
+    void publishPropertyUpdated(PropertyUpdatedEvent event);
+    void publishPropertyDeleted(PropertyDeletedEvent event);
 }

@@ -18,6 +18,7 @@ import com.se361.iam_service.entity.Customer;
 import com.se361.iam_service.entity.PropertyOwner;
 import com.se361.iam_service.entity.SaleAgent;
 import com.se361.iam_service.entity.User;
+import com.se361.iam_service.event.UserEventPublisher;
 import com.se361.iam_service.repository.CustomerRepository;
 import com.se361.iam_service.repository.PropertyOwnerRepository;
 import com.se361.iam_service.repository.SaleAgentRepository;
@@ -57,6 +58,7 @@ public class UserServiceImpl implements UserService {
     private final CloudinaryService cloudinaryService;
     private final RankingClient rankingClient;
     private final LocationClient locationClient;
+    private final UserEventPublisher userEventPublisher;
 
     private final ConcurrentHashMap<UUID, String> locationCache = new ConcurrentHashMap<>();
 
@@ -106,6 +108,7 @@ public class UserServiceImpl implements UserService {
         User user = findById(id);
         applyUpdates(user, dto);
         userRepository.save(user);
+        userEventPublisher.publishUserUpdatedAfterCommit(user);
         return toResponse(user);
     }
 
@@ -121,9 +124,12 @@ public class UserServiceImpl implements UserService {
         User user = findById(id);
         if (user.getRole() == Constants.RoleEnum.ADMIN) {
             userRepository.delete(user);
+            user.setStatus(Constants.StatusProfileEnum.DELETED);
+            userEventPublisher.publishUserUpdatedAfterCommit(user);
         } else {
             user.setStatus(Constants.StatusProfileEnum.DELETED);
             userRepository.save(user);
+            userEventPublisher.publishUserUpdatedAfterCommit(user);
         }
     }
 
@@ -175,7 +181,9 @@ public class UserServiceImpl implements UserService {
             user.setPropertyOwner(owner);
         }
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        userEventPublisher.publishUserCreatedAfterCommit(savedUser);
+        return savedUser;
     }
 
     @Override
@@ -198,6 +206,7 @@ public class UserServiceImpl implements UserService {
             });
         }
         userRepository.save(user);
+        userEventPublisher.publishUserUpdatedAfterCommit(user);
     }
 
     @Override
@@ -205,7 +214,9 @@ public class UserServiceImpl implements UserService {
     public User updateStatus(UUID id, String status) {
         User user = findById(id);
         user.setStatus(Constants.StatusProfileEnum.valueOf(status.toUpperCase()));
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        userEventPublisher.publishUserUpdatedAfterCommit(savedUser);
+        return savedUser;
     }
 
     @Override

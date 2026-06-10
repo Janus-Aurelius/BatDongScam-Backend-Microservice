@@ -80,6 +80,7 @@ public class PaymentWebhookProcessor implements PaymentWebhookUseCase {
                         new ContractId(contract.getId()),
                         contract.getContractType().name(),
                         contract.getPropertyId(),
+                        contract.getCustomerId(),
                         ContractStatus.PENDING_PAYMENT.name(),
                         ContractStatus.ACTIVE.name(),
                         Instant.now()
