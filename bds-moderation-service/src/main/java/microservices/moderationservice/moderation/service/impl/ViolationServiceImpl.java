@@ -28,12 +28,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -63,8 +63,9 @@ public class ViolationServiceImpl implements ViolationService {
     private final UserReplicaRepository userReplicaRepository;
     private final ViolationReportDetailsRepository violationReportDetailsRepository;
     private final ViolationReportScheduler violationReportScheduler;
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboxEventRepository outboxEventRepository;
+    private final PropertyReplicaRepository propertyReplicaRepository;
 
     @Override
     @Transactional(readOnly = true)
