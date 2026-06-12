@@ -10,13 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -24,9 +22,6 @@ class ViolationPenaltyAppliedConsumerTest {
 
     @Mock
     private PropertyUseCase propertyUseCase;
-
-    @Mock
-    private RestTemplate restTemplate;
 
     private ObjectMapper objectMapper;
 
@@ -36,7 +31,7 @@ class ViolationPenaltyAppliedConsumerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        consumer = new ViolationPenaltyAppliedConsumer(propertyUseCase, restTemplate, objectMapper);
+        consumer = new ViolationPenaltyAppliedConsumer(propertyUseCase, objectMapper);
     }
 
     @Test
@@ -65,11 +60,10 @@ class ViolationPenaltyAppliedConsumerTest {
         ArgumentCaptor<UpdatePropertyStatusCommand> commandCaptor = ArgumentCaptor.forClass(UpdatePropertyStatusCommand.class);
         verify(propertyUseCase, times(1)).updatePropertyStatus(eq(propertyId), commandCaptor.capture());
         assertEquals("REMOVED", commandCaptor.getValue().targetStatus());
-        verifyNoInteractions(restTemplate);
     }
 
     @Test
-    void consumeViolationPenaltyApplied_SuspendedAccount_CallsRestTemplate() throws Exception {
+    void consumeViolationPenaltyApplied_SuspendedAccount_DoesNotCallRemoteService() throws Exception {
         UUID violationId = UUID.randomUUID();
         UUID reporterId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
@@ -90,7 +84,6 @@ class ViolationPenaltyAppliedConsumerTest {
 
         consumer.consumeViolationPenaltyApplied(payload);
 
-        verify(restTemplate, times(1)).put(contains("/users/" + ownerId + "/status?status=SUSPENDED"), eq(null));
         verifyNoInteractions(propertyUseCase);
     }
 
@@ -118,6 +111,5 @@ class ViolationPenaltyAppliedConsumerTest {
         consumer.consumeViolationPenaltyApplied(payload);
 
         verifyNoInteractions(propertyUseCase);
-        verifyNoInteractions(restTemplate);
     }
 }

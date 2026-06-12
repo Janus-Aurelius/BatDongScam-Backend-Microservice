@@ -20,6 +20,8 @@ import microservices.moderationservice.moderation.repository.PropertyReplicaRepo
 import microservices.moderationservice.moderation.repository.UserReplicaRepository;
 import microservices.moderationservice.moderation.repository.ViolationRepository;
 import microservices.moderationservice.moderation.repository.mongo.ViolationReportDetailsRepository;
+import microservices.moderationservice.moderation.repository.replica.PropertyReplicaRepository;
+import microservices.moderationservice.moderation.repository.replica.UserReplicaRepository;
 import microservices.moderationservice.moderation.scheduler.ViolationReportScheduler;
 import microservices.moderationservice.moderation.schema.ViolationReportDetails;
 import microservices.moderationservice.moderation.service.ViolationService;
@@ -104,6 +106,7 @@ public class ViolationServiceImpl implements ViolationService {
                 cb.equal(root.get("reporterId"), currentUserId);
 
         Page<ViolationReport> violations = violationRepository.findAll(spec, pageable);
+        ReplicaLookup replicaLookup = loadReplicaLookup(violations.getContent());
         List<ViolationUserItem> items = violations.getContent().stream()
                 .map(v -> {
                     ViolationUserItem item = violationMapper.toUserItem(v);

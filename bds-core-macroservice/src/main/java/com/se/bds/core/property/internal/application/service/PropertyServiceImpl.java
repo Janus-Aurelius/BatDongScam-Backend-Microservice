@@ -1,11 +1,14 @@
 package com.se.bds.core.property.internal.application.service;
 
 import com.se.bds.common.exception.BusinessException;
+import com.se.bds.common.event.PropertyCreatedEvent;
+import com.se.bds.common.event.PropertyDeletedEvent;
 import com.se.bds.common.message.discovery.MSG32;
 import com.se.bds.common.message.validation.MSG11;
 import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.common.message.validation.MSG18;
 import com.se.bds.common.message.validation.MSG2;
+import com.se.bds.common.event.PropertyUpdatedEvent;
 import com.se.bds.core.property.api.event.*;
 import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.command.pattern.CreatePropertyAction;
@@ -125,13 +128,7 @@ class PropertyServiceImpl implements PropertyUseCase {
         Property savedWithFiles = propertyRepository.save(saved);
 
         // Apply OBSERVER PATTERN
-        PropertyCreatedIntegrationEvent integrationEvent = new PropertyCreatedIntegrationEvent(
-                savedWithFiles.getId(),
-                savedWithFiles.getTitle(),
-                savedWithFiles.getOwnerId(),
-                savedWithFiles.getTransactionType().name()
-        );
-        messagePublisherPort.publishPropertyCreated(integrationEvent);
+        messagePublisherPort.publishPropertyCreated(toPropertyCreatedEvent(savedWithFiles));
 
         return savedWithFiles;
     }
@@ -231,7 +228,7 @@ class PropertyServiceImpl implements PropertyUseCase {
 
         Property saved = action.execute();
 
-        messagePublisherPort.publishPropertyUpdated(new PropertyUpdatedIntegrationEvent(saved.getId()));
+        messagePublisherPort.publishPropertyUpdated(toPropertyUpdatedEvent(saved));
 
         return saved;
     }
@@ -272,7 +269,12 @@ class PropertyServiceImpl implements PropertyUseCase {
            new PropertyId(propertyId), oldStatus.name(), PropertyStatus.DELETED.name(), Instant.now()
         ));
 
-        messagePublisherPort.publishPropertyDeleted(new PropertyDeletedIntegrationEvent(propertyId));
+        messagePublisherPort.publishPropertyDeleted(new PropertyDeletedEvent(
+                UUID.randomUUID(),
+                Instant.now(),
+                propertyId,
+                PropertyStatus.DELETED.name()
+        ));
     }
 
     /**
@@ -317,6 +319,10 @@ class PropertyServiceImpl implements PropertyUseCase {
                 null,
                 "filters",
                 getCurrentUserId(),
+                firstOrNull(command.cityIds()),
+                firstOrNull(command.districtIds()),
+                firstOrNull(command.wardIds()),
+                firstOrNull(command.propertyTypeIds()),
                 Instant.now()
         ));
 
@@ -333,12 +339,17 @@ class PropertyServiceImpl implements PropertyUseCase {
      */
     @Override
     @Cacheable(value = "propertyDetails", key = "#propertyId")
+    @Transactional(readOnly = true)
     public Property getPropertyDetail(UUID propertyId) {
         Property property = getProperty(propertyId);
         eventPublisher.publishEvent(new PropertySearchedEvent(
                 propertyId,
                 null,
                 getCurrentUserId(),
+                resolveCityId(property),
+                resolveDistrictId(property),
+                property.getWardId(),
+                property.getPropertyType() != null ? property.getPropertyType().getId() : null,
                 Instant.now()
         ));
         return property;
@@ -771,6 +782,103 @@ class PropertyServiceImpl implements PropertyUseCase {
                 iterator.remove();
             }
         }
+    }
+
+    private PropertyCreatedEvent toPropertyCreatedEvent(Property property) {
+        return new PropertyCreatedEvent(
+                UUID.randomUUID(),
+                Instant.now(),
+                property.getId(),
+                property.getOwnerId(),
+                property.getAssignedAgentId(),
+                property.getWardId(),
+                property.getPropertyType() != null ? property.getPropertyType().getId() : null,
+                property.getPropertyType() != null ? property.getPropertyType().getTypeName() : null,
+                property.getTitle(),
+                property.getDescription(),
+                property.getFullAddress(),
+                property.getPriceAmount(),
+                property.getPricePerSquareMeter(),
+                property.getCommissionRate(),
+                property.getServiceFeeAmount(),
+                property.getServiceFeeCollectedAmount(),
+                property.getArea(),
+                property.getRooms(),
+                property.getBathrooms(),
+                property.getFloors(),
+                property.getBedrooms(),
+                property.getHouseOrientation() != null ? property.getHouseOrientation().name() : null,
+                property.getBalconyOrientation() != null ? property.getBalconyOrientation().name() : null,
+                property.getYearBuilt(),
+                property.getAmenities(),
+                property.getTransactionType() != null ? property.getTransactionType().name() : null,
+                property.getStatus() != null ? property.getStatus().name() : null,
+                resolveThumbnailUrl(property)
+        );
+    }
+
+    private PropertyUpdatedEvent toPropertyUpdatedEvent(Property property) {
+        return new PropertyUpdatedEvent(
+                UUID.randomUUID(),
+                Instant.now(),
+                property.getId(),
+                property.getOwnerId(),
+                property.getAssignedAgentId(),
+                property.getWardId(),
+                property.getPropertyType() != null ? property.getPropertyType().getId() : null,
+                property.getPropertyType() != null ? property.getPropertyType().getTypeName() : null,
+                property.getTitle(),
+                property.getDescription(),
+                property.getFullAddress(),
+                property.getPriceAmount(),
+                property.getPricePerSquareMeter(),
+                property.getCommissionRate(),
+                property.getServiceFeeAmount(),
+                property.getServiceFeeCollectedAmount(),
+                property.getArea(),
+                property.getRooms(),
+                property.getBathrooms(),
+                property.getFloors(),
+                property.getBedrooms(),
+                property.getHouseOrientation() != null ? property.getHouseOrientation().name() : null,
+                property.getBalconyOrientation() != null ? property.getBalconyOrientation().name() : null,
+                property.getYearBuilt(),
+                property.getAmenities(),
+                property.getTransactionType() != null ? property.getTransactionType().name() : null,
+                property.getStatus() != null ? property.getStatus().name() : null,
+                resolveThumbnailUrl(property)
+        );
+    }
+
+    private String resolveThumbnailUrl(Property property) {
+        if (property.getMediaList() == null || property.getMediaList().isEmpty()) {
+            return null;
+        }
+        return property.getMediaList().stream()
+                .filter(media -> media.getFilePath() != null && !media.getFilePath().isBlank())
+                .map(Media::getFilePath)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private UUID resolveDistrictId(Property property) {
+        Ward ward = property.getWard();
+        if (ward == null || ward.getDistrict() == null) {
+            return null;
+        }
+        return ward.getDistrict().getId();
+    }
+
+    private UUID resolveCityId(Property property) {
+        Ward ward = property.getWard();
+        if (ward == null || ward.getDistrict() == null || ward.getDistrict().getCity() == null) {
+            return null;
+        }
+        return ward.getDistrict().getCity().getId();
+    }
+
+    private UUID firstOrNull(List<UUID> values) {
+        return values != null && !values.isEmpty() ? values.get(0) : null;
     }
 
     @Override

@@ -2,9 +2,12 @@ package microservices.appointmentservice.services.property.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.se.bds.common.event.PropertyCreatedEvent;
+import com.se.bds.common.event.PropertyDeletedEvent;
 import com.se.bds.common.event.PropertyStatusChangedEvent;
 import com.se.bds.common.event.PropertyUpdatedEvent;
+import jakarta.persistence.EntityManager;
 import microservices.appointmentservice.entities.property.Property;
+import microservices.appointmentservice.entities.property.PropertyType;
 import microservices.appointmentservice.repositories.PropertyRepository;
 import microservices.appointmentservice.utils.Constants;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ public class PropertyEventListener {
 
     private final PropertyRepository propertyRepository;
     private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
 
     /**
      * CHANGED: Parse PropertyCreatedEvent (Fat Event từ bds-common).
@@ -90,7 +93,7 @@ public class PropertyEventListener {
             propertyRepository.findById(propertyId).ifPresent(property -> {
                 property.setStatus(Constants.PropertyStatusEnum.DELETED);
                 propertyRepository.save(property);
-                log.info("[KAFKA] Marked property ID={} as DELETED locally", propertyId);
+                log.info("[KAFKA] Marked property ID={} as DELETED locally", event.propertyId());
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-deleted event", e);

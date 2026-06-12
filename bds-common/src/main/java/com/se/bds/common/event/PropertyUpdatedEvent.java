@@ -1,43 +1,40 @@
 package com.se.bds.common.event;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Fat Event - published khi property được cập nhật.
- *
- * Topic: property-updated
- * Payload giống PropertyCreatedEvent để consumer có thể dùng chung logic upsert.
- */
 public record PropertyUpdatedEvent(
-        UUID propertyId,
-        String title,
-        String description,
+        @NotNull UUID eventId,
+        @NotNull Instant occurredAt,
+        @NotNull UUID propertyId,
+        @NotNull UUID ownerId,
+        UUID assignedAgentId,
+        @NotNull UUID wardId,
+        @NotNull UUID propertyTypeId,
+        String propertyTypeName,
+        @NotBlank String title,
+        @NotBlank String description,
         String fullAddress,
-
-        BigDecimal priceAmount,
+        @NotNull BigDecimal priceAmount,
         BigDecimal pricePerSquareMeter,
-        BigDecimal commissionRate,
-        BigDecimal serviceFeeAmount,
-        BigDecimal area,
-
+        @NotNull BigDecimal commissionRate,
+        @NotNull BigDecimal serviceFeeAmount,
+        @NotNull BigDecimal serviceFeeCollectedAmount,
+        @NotNull BigDecimal area,
         Integer rooms,
         Integer bathrooms,
         Integer floors,
         Integer bedrooms,
-        Integer yearBuilt,
-
-        String transactionType,
-        String status,
         String houseOrientation,
         String balconyOrientation,
-
-        UUID ownerId,
-        UUID assignedAgentId,
-        UUID wardId,
-
-        String thumbnailUrl,
-        Instant occurredAt
+        Integer yearBuilt,
+        String amenities,
+        @NotBlank String transactionType,
+        @NotBlank String status,
+        String thumbnailUrl
 ) {
 }

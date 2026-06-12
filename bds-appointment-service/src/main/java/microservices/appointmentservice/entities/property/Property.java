@@ -1,7 +1,6 @@
 package microservices.appointmentservice.entities.property;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import microservices.appointmentservice.entities.AbstractBaseEntity;
 import microservices.appointmentservice.entities.document.IdentificationDocument;
 import microservices.appointmentservice.entities.appointment.Appointment;
 import microservices.appointmentservice.utils.Constants;
@@ -21,10 +20,19 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@AttributeOverrides({
-        @AttributeOverride(name = "id", column = @Column(name = "property_id", nullable = false)),
-})
-public class Property extends AbstractBaseEntity {
+public class Property implements java.io.Serializable {
+
+    @Id
+    @Column(name = "property_id", nullable = false)
+    private UUID id;
+
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;

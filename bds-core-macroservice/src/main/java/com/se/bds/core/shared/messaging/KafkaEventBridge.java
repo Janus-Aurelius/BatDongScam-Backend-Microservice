@@ -104,7 +104,7 @@ public class KafkaEventBridge {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyDeleted(PropertyDeletedIntegrationEvent event) {
+    public void handlePropertyDeleted(PropertyDeletedEvent event) {
         publish("property-deleted", event.propertyId().toString(), event);
     }
 
