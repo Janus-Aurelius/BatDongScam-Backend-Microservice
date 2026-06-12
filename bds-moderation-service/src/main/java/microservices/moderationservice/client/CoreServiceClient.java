@@ -6,7 +6,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.UUID;
 import java.util.Map;
 
-@FeignClient(name = "core-macroservice", contextId = "coreServiceClient")
+@FeignClient(
+        name = "core-macroservice",
+        contextId = "coreServiceClient",
+        fallbackFactory = CoreServiceClientFallbackFactory.class
+)
 public interface CoreServiceClient {
     @GetMapping("/public/properties/{propertyId}")
     Map<String, Object> getPropertyDetails(@PathVariable("propertyId") UUID propertyId);

@@ -4,6 +4,16 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Fat Event - chứa toàn bộ dữ liệu cần thiết để consumer không cần gọi Feign.
+ *
+ * Published by: bds-core-macroservice (KafkaEventBridge)
+ * Consumed by:
+ *   - bds-appointment-service  → sync PropertyReplica (không cần CoreServiceClient nữa)
+ *   - bds-moderation-service   → sync PropertyReplica
+ *
+ * Topic: property-created
+ */
 public record PropertyCreatedEvent(
         UUID propertyId,
         String title,
@@ -17,7 +27,7 @@ public record PropertyCreatedEvent(
         BigDecimal serviceFeeAmount,
         BigDecimal area,
 
-        // Đặc điểm vật lý
+        // Đặc điểm
         Integer rooms,
         Integer bathrooms,
         Integer floors,

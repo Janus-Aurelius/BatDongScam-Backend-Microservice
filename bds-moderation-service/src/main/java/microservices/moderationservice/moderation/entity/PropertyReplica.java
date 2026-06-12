@@ -1,10 +1,8 @@
 package microservices.moderationservice.moderation.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+import microservices.moderationservice.common.model.AbstractBaseEntity;
 
 import java.math.BigDecimal;
 import java.util.UUID;

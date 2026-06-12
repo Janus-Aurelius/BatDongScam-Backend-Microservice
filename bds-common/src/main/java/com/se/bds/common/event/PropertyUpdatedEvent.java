@@ -4,6 +4,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Fat Event - published khi property được cập nhật.
+ *
+ * Topic: property-updated
+ * Payload giống PropertyCreatedEvent để consumer có thể dùng chung logic upsert.
+ */
 public record PropertyUpdatedEvent(
         UUID propertyId,
         String title,

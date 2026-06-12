@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.UUID;
 import java.util.Map;
 
-@FeignClient(name = "iam-service", contextId = "iamServiceClient")
+@FeignClient(
+        name = "iam-service",
+        contextId = "iamServiceClient",
+        fallbackFactory = IamServiceClientFallbackFactory.class
+)
 public interface IamServiceClient {
     @GetMapping("/users/validate")
     Map<String, Object> validateUser(@RequestParam("userId") UUID userId, @RequestParam("role") String role);
