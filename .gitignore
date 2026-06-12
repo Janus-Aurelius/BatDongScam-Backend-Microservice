@@ -18,8 +18,7 @@ target/
 .springBeans
 .sts4-cache
 /node_modules
-
-node_modules/
+/.antigravitycli
 ### IntelliJ IDEA ###
 .idea
 *.iws

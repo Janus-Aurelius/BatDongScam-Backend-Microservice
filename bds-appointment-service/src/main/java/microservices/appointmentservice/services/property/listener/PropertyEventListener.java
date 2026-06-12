@@ -18,6 +18,14 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REFACTORED: loại bỏ CoreServiceClient.
+ *
+ * Trước: nhận event → gọi coreServiceClient.getPropertyDetails(id) → sync
+ * Sau:   nhận Fat Event → đọc trực tiếp từ event payload → sync
+ *
+ * Kết quả: 0 Feign call, không còn N+1 pattern.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -27,17 +35,22 @@ public class PropertyEventListener {
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
 
+    /**
+     * CHANGED: Parse PropertyCreatedEvent (Fat Event từ bds-common).
+     * Không cần gọi coreServiceClient.getPropertyDetails() nữa.
+     */
     @KafkaListener(topics = "property-created", groupId = "appointment-service-group")
     public void onPropertyCreated(String message) {
-        log.info("[KAFKA] Received property-created event: {}", message);
+        log.info("[KAFKA] Received property-created event");
         try {
             PropertyCreatedEvent event = objectMapper.readValue(message, PropertyCreatedEvent.class);
-            Property property = propertyRepository.findById(event.propertyId()).orElseGet(() -> {
-                Property newProperty = new Property();
-                newProperty.setId(event.propertyId());
-                return newProperty;
-            });
-            syncProperty(property, event);
+
+            Property property = propertyRepository.findById(event.propertyId())
+                    .orElse(new Property());
+
+            property.setId(event.propertyId());
+            syncFromCreatedEvent(property, event);
+
             propertyRepository.save(property);
             log.info("[KAFKA] Synchronized created property ID={}", event.propertyId());
         } catch (Exception e) {
@@ -45,18 +58,25 @@ public class PropertyEventListener {
         }
     }
 
+    /**
+     * CHANGED: Parse PropertyUpdatedEvent (Fat Event từ bds-common).
+     */
     @KafkaListener(topics = "property-updated", groupId = "appointment-service-group")
     public void onPropertyUpdated(String message) {
-        log.info("[KAFKA] Received property-updated event: {}", message);
+        log.info("[KAFKA] Received property-updated event");
         try {
             PropertyUpdatedEvent event = objectMapper.readValue(message, PropertyUpdatedEvent.class);
-            Property property = propertyRepository.findById(event.propertyId()).orElseGet(() -> {
-                log.warn("[KAFKA] Property ID={} not found locally, creating new replica", event.propertyId());
-                Property newProperty = new Property();
-                newProperty.setId(event.propertyId());
-                return newProperty;
-            });
-            syncProperty(property, event);
+
+            Property property = propertyRepository.findById(event.propertyId())
+                    .orElseGet(() -> {
+                        log.warn("[KAFKA] Property ID={} not found locally, creating new replica", event.propertyId());
+                        Property p = new Property();
+                        p.setId(event.propertyId());
+                        return p;
+                    });
+
+            syncFromUpdatedEvent(property, event);
+
             propertyRepository.save(property);
             log.info("[KAFKA] Synchronized updated property ID={}", event.propertyId());
         } catch (Exception e) {
@@ -66,10 +86,11 @@ public class PropertyEventListener {
 
     @KafkaListener(topics = "property-deleted", groupId = "appointment-service-group")
     public void onPropertyDeleted(String message) {
-        log.info("[KAFKA] Received property-deleted event: {}", message);
+        log.info("[KAFKA] Received property-deleted event");
         try {
-            PropertyDeletedEvent event = objectMapper.readValue(message, PropertyDeletedEvent.class);
-            propertyRepository.findById(event.propertyId()).ifPresent(property -> {
+            Map<String, Object> eventMap = objectMapper.readValue(message, Map.class);
+            UUID propertyId = UUID.fromString(eventMap.get("propertyId").toString());
+            propertyRepository.findById(propertyId).ifPresent(property -> {
                 property.setStatus(Constants.PropertyStatusEnum.DELETED);
                 propertyRepository.save(property);
                 log.info("[KAFKA] Marked property ID={} as DELETED locally", event.propertyId());
@@ -81,13 +102,13 @@ public class PropertyEventListener {
 
     @KafkaListener(topics = "property-status-changed", groupId = "appointment-service-group")
     public void onPropertyStatusChanged(String message) {
-        log.info("[KAFKA] Received property-status-changed event: {}", message);
+        log.info("[KAFKA] Received property-status-changed event");
         try {
             PropertyStatusChangedEvent event = objectMapper.readValue(message, PropertyStatusChangedEvent.class);
             propertyRepository.findById(event.propertyId()).ifPresent(property -> {
                 property.setStatus(Constants.PropertyStatusEnum.valueOf(event.newStatus().toUpperCase()));
                 propertyRepository.save(property);
-                log.info("[KAFKA] Updated property ID={} status to {} locally", event.propertyId(), event.newStatus());
+                log.info("[KAFKA] Updated property ID={} status to {}", event.propertyId(), event.newStatus());
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-status-changed event", e);
@@ -96,88 +117,82 @@ public class PropertyEventListener {
 
     @KafkaListener(topics = "property-agent-assigned", groupId = "appointment-service-group")
     public void onPropertyAgentAssigned(String message) {
-        log.info("[KAFKA] Received property-agent-assigned event: {}", message);
+        log.info("[KAFKA] Received property-agent-assigned event");
         try {
             Map<String, Object> eventMap = objectMapper.readValue(message, Map.class);
             UUID propertyId = UUID.fromString(eventMap.get("propertyId").toString());
             Object agentIdObj = eventMap.get("agentId");
-
             propertyRepository.findById(propertyId).ifPresent(property -> {
-                if (agentIdObj != null) {
-                    property.setAssignedAgentId(UUID.fromString(agentIdObj.toString()));
-                } else {
-                    property.setAssignedAgentId(null);
-                }
+                property.setAssignedAgentId(agentIdObj != null ? UUID.fromString(agentIdObj.toString()) : null);
                 propertyRepository.save(property);
-                log.info("[KAFKA] Synchronized property ID={} assigned agent to {}", propertyId, agentIdObj);
+                log.info("[KAFKA] Synced property ID={} assigned agent to {}", propertyId, agentIdObj);
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-agent-assigned event", e);
         }
     }
 
-    private void syncProperty(Property property, PropertyCreatedEvent event) {
-        property.setOwnerId(event.ownerId());
-        property.setAssignedAgentId(event.assignedAgentId());
-        property.setWardId(event.wardId());
-        property.setTitle(event.title());
-        property.setDescription(event.description());
-        property.setFullAddress(event.fullAddress());
-        property.setArea(event.area());
-        property.setRooms(event.rooms());
-        property.setBathrooms(event.bathrooms());
-        property.setFloors(event.floors());
-        property.setBedrooms(event.bedrooms());
-        property.setYearBuilt(event.yearBuilt());
-        property.setPriceAmount(event.priceAmount());
-        property.setPricePerSquareMeter(event.pricePerSquareMeter());
-        property.setCommissionRate(event.commissionRate());
-        property.setServiceFeeAmount(event.serviceFeeAmount());
-        property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
-        applyPropertyType(property, event.propertyTypeId());
-        applyEnums(property, event.transactionType(), event.status(), event.houseOrientation(), event.balconyOrientation());
-    }
+    // ======================== HELPERS ========================
 
-    private void syncProperty(Property property, PropertyUpdatedEvent event) {
-        property.setOwnerId(event.ownerId());
-        property.setAssignedAgentId(event.assignedAgentId());
-        property.setWardId(event.wardId());
-        property.setTitle(event.title());
-        property.setDescription(event.description());
-        property.setFullAddress(event.fullAddress());
-        property.setArea(event.area());
-        property.setRooms(event.rooms());
-        property.setBathrooms(event.bathrooms());
-        property.setFloors(event.floors());
-        property.setBedrooms(event.bedrooms());
-        property.setYearBuilt(event.yearBuilt());
-        property.setPriceAmount(event.priceAmount());
-        property.setPricePerSquareMeter(event.pricePerSquareMeter());
-        property.setCommissionRate(event.commissionRate());
-        property.setServiceFeeAmount(event.serviceFeeAmount());
-        property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
-        applyPropertyType(property, event.propertyTypeId());
-        applyEnums(property, event.transactionType(), event.status(), event.houseOrientation(), event.balconyOrientation());
-    }
-
-    private void applyPropertyType(Property property, UUID propertyTypeId) {
-        if (propertyTypeId != null) {
-            property.setPropertyType(entityManager.getReference(PropertyType.class, propertyTypeId));
+    private void syncFromCreatedEvent(Property property, PropertyCreatedEvent event) {
+        if (event.title() != null) property.setTitle(event.title());
+        if (event.description() != null) property.setDescription(event.description());
+        if (event.fullAddress() != null) property.setFullAddress(event.fullAddress());
+        if (event.area() != null) property.setArea(event.area());
+        if (event.rooms() != null) property.setRooms(event.rooms());
+        if (event.bathrooms() != null) property.setBathrooms(event.bathrooms());
+        if (event.floors() != null) property.setFloors(event.floors());
+        if (event.bedrooms() != null) property.setBedrooms(event.bedrooms());
+        if (event.yearBuilt() != null) property.setYearBuilt(event.yearBuilt());
+        if (event.priceAmount() != null) property.setPriceAmount(event.priceAmount());
+        if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
+        if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
+        if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.ownerId() != null) property.setOwnerId(event.ownerId());
+        if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
+        if (event.wardId() != null) property.setWardId(event.wardId());
+        if (event.transactionType() != null) {
+            property.setTransactionType(Constants.TransactionTypeEnum.valueOf(event.transactionType().toUpperCase()));
+        }
+        if (event.status() != null) {
+            property.setStatus(Constants.PropertyStatusEnum.valueOf(event.status().toUpperCase()));
+        }
+        if (event.houseOrientation() != null) {
+            property.setHouseOrientation(Constants.OrientationEnum.valueOf(event.houseOrientation().toUpperCase()));
+        }
+        if (event.balconyOrientation() != null) {
+            property.setBalconyOrientation(Constants.OrientationEnum.valueOf(event.balconyOrientation().toUpperCase()));
         }
     }
 
-    private void applyEnums(Property property, String transactionType, String status, String houseOrientation, String balconyOrientation) {
-        if (transactionType != null) {
-            property.setTransactionType(Constants.TransactionTypeEnum.valueOf(transactionType.toUpperCase()));
+    private void syncFromUpdatedEvent(Property property, PropertyUpdatedEvent event) {
+        if (event.title() != null) property.setTitle(event.title());
+        if (event.description() != null) property.setDescription(event.description());
+        if (event.fullAddress() != null) property.setFullAddress(event.fullAddress());
+        if (event.area() != null) property.setArea(event.area());
+        if (event.rooms() != null) property.setRooms(event.rooms());
+        if (event.bathrooms() != null) property.setBathrooms(event.bathrooms());
+        if (event.floors() != null) property.setFloors(event.floors());
+        if (event.bedrooms() != null) property.setBedrooms(event.bedrooms());
+        if (event.yearBuilt() != null) property.setYearBuilt(event.yearBuilt());
+        if (event.priceAmount() != null) property.setPriceAmount(event.priceAmount());
+        if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
+        if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
+        if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.ownerId() != null) property.setOwnerId(event.ownerId());
+        if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
+        if (event.wardId() != null) property.setWardId(event.wardId());
+        if (event.transactionType() != null) {
+            property.setTransactionType(Constants.TransactionTypeEnum.valueOf(event.transactionType().toUpperCase()));
         }
-        if (status != null) {
-            property.setStatus(Constants.PropertyStatusEnum.valueOf(status.toUpperCase()));
+        if (event.status() != null) {
+            property.setStatus(Constants.PropertyStatusEnum.valueOf(event.status().toUpperCase()));
         }
-        if (houseOrientation != null) {
-            property.setHouseOrientation(Constants.OrientationEnum.valueOf(houseOrientation.toUpperCase()));
+        if (event.houseOrientation() != null) {
+            property.setHouseOrientation(Constants.OrientationEnum.valueOf(event.houseOrientation().toUpperCase()));
         }
-        if (balconyOrientation != null) {
-            property.setBalconyOrientation(Constants.OrientationEnum.valueOf(balconyOrientation.toUpperCase()));
+        if (event.balconyOrientation() != null) {
+            property.setBalconyOrientation(Constants.OrientationEnum.valueOf(event.balconyOrientation().toUpperCase()));
         }
     }
 }

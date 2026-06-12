@@ -1,40 +1,51 @@
 package com.se.bds.common.event;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Fat Event - chứa toàn bộ dữ liệu cần thiết để consumer không cần gọi Feign.
+ *
+ * Published by: bds-core-macroservice (KafkaEventBridge)
+ * Consumed by:
+ *   - bds-appointment-service  → sync PropertyReplica (không cần CoreServiceClient nữa)
+ *   - bds-moderation-service   → sync PropertyReplica
+ *
+ * Topic: property-created
+ */
 public record PropertyCreatedEvent(
-        @NotNull UUID eventId,
-        @NotNull Instant occurredAt,
-        @NotNull UUID propertyId,
-        @NotNull UUID ownerId,
-        UUID assignedAgentId,
-        @NotNull UUID wardId,
-        @NotNull UUID propertyTypeId,
-        String propertyTypeName,
-        @NotBlank String title,
-        @NotBlank String description,
+        UUID propertyId,
+        String title,
+        String description,
         String fullAddress,
-        @NotNull BigDecimal priceAmount,
+
+        // Giá & tài chính
+        BigDecimal priceAmount,
         BigDecimal pricePerSquareMeter,
-        @NotNull BigDecimal commissionRate,
-        @NotNull BigDecimal serviceFeeAmount,
-        @NotNull BigDecimal serviceFeeCollectedAmount,
-        @NotNull BigDecimal area,
+        BigDecimal commissionRate,
+        BigDecimal serviceFeeAmount,
+        BigDecimal area,
+
+        // Đặc điểm
         Integer rooms,
         Integer bathrooms,
         Integer floors,
         Integer bedrooms,
+        Integer yearBuilt,
+
+        // Enums (gửi dạng String để tránh coupling với enum nội bộ của core)
+        String transactionType,
+        String status,
         String houseOrientation,
         String balconyOrientation,
-        Integer yearBuilt,
-        String amenities,
-        @NotBlank String transactionType,
-        @NotBlank String status,
-        String thumbnailUrl
+
+        // Quan hệ
+        UUID ownerId,
+        UUID assignedAgentId,
+        UUID wardId,
+
+        String thumbnailUrl,
+        Instant occurredAt
 ) {
 }

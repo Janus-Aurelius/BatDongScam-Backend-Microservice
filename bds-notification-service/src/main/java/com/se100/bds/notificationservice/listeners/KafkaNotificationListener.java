@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.se.bds.common.enums.NotificationTypeEnum;
 import com.se.bds.common.enums.RelatedEntityTypeEnum;
+import com.se.bds.common.event.ContractStatusChangedFatEvent;
 import com.se100.bds.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * REFACTORED: loại bỏ CoreServiceClient.
+ *
+ * handleContractStatusChanged:
+ *   Trước: nhận contractId → gọi coreServiceClient.getContractById(id) → lấy customerId
+ *   Sau:   đọc customerId trực tiếp từ ContractStatusChangedFatEvent payload
+ *
+ * Kết quả: 0 Feign call trong listener.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -19,43 +29,38 @@ public class KafkaNotificationListener {
 
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
+    // CoreServiceClient đã bị xóa
 
+    /**
+     * CHANGED: Parse ContractStatusChangedFatEvent - có sẵn customerId.
+     * Không cần gọi coreServiceClient.getContractById() nữa.
+     */
     @KafkaListener(topics = "contract-status-changed", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
     public void handleContractStatusChanged(String message) {
-        log.info("Received contract-status-changed event: {}", message);
+        log.info("Received contract-status-changed event");
         try {
-            JsonNode node = objectMapper.readTree(message);
-            JsonNode contractIdNode = node.get("contractId");
-            UUID contractId = null;
-            if (contractIdNode != null) {
-                if (contractIdNode.isObject() && contractIdNode.has("value")) {
-                    contractId = UUID.fromString(contractIdNode.get("value").asText());
-                } else {
-                    contractId = UUID.fromString(contractIdNode.asText());
-                }
-            }
-            String contractType = node.has("contractType") ? node.get("contractType").asText() : "";
-            String newStatus = node.has("newStatus") ? node.get("newStatus").asText() : "";
-            UUID customerId = node.has("customerId") && !node.get("customerId").isNull()
-                    ? UUID.fromString(node.get("customerId").asText())
-                    : null;
+            ContractStatusChangedFatEvent event = objectMapper.readValue(message, ContractStatusChangedFatEvent.class);
 
-            if (contractId != null && customerId != null) {
-                String title = "Contract Status Updated";
-                String body = String.format("Your %s contract status is now %s.", contractType.toLowerCase(), newStatus.toLowerCase());
-                notificationService.createNotification(
-                        customerId,
-                        null,
-                        NotificationTypeEnum.CONTRACT_UPDATE,
-                        title,
-                        body,
-                        RelatedEntityTypeEnum.CONTRACT,
-                        contractId.toString(),
-                        null
-                );
-            } else {
-                log.warn("Contract status event missing contractId or customerId: contractId={}, customerId={}", contractId, customerId);
+            if (event.customerId() == null) {
+                log.warn("ContractStatusChangedFatEvent missing customerId for contractId={}", event.contractId());
+                return;
             }
+
+            String title = "Contract Status Updated";
+            String body = String.format("Your %s contract status is now %s.",
+                    event.contractType() != null ? event.contractType().toLowerCase() : "rental",
+                    event.newStatus() != null ? event.newStatus().toLowerCase() : "updated");
+
+            notificationService.createNotification(
+                    event.customerId(),
+                    null,
+                    NotificationTypeEnum.CONTRACT_UPDATE,
+                    title,
+                    body,
+                    RelatedEntityTypeEnum.CONTRACT,
+                    event.contractId().toString(),
+                    null
+            );
         } catch (Exception e) {
             log.error("Error processing contract-status-changed event", e);
         }
@@ -63,30 +68,25 @@ public class KafkaNotificationListener {
 
     @KafkaListener(topics = "payment-completed", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
     public void handlePaymentCompleted(String message) {
-        log.info("Received payment-completed event: {}", message);
+        log.info("Received payment-completed event");
         try {
             JsonNode node = objectMapper.readTree(message);
-            UUID paymentId = node.has("paymentId") ?
-                    (node.get("paymentId").isObject() && node.get("paymentId").has("value") ? UUID.fromString(node.get("paymentId").get("value").asText()) : UUID.fromString(node.get("paymentId").asText())) : null;
-            UUID payerUserId = null;
-            if (node.has("payerUserId") && !node.get("payerUserId").isNull()) {
-                payerUserId = UUID.fromString(node.get("payerUserId").asText());
-            } else if (node.has("payerId") && !node.get("payerId").isNull()) {
-                payerUserId = UUID.fromString(node.get("payerId").asText());
-            }
+            UUID paymentId = extractUuid(node, "paymentId");
+            UUID payerUserId = node.has("payerUserId") && !node.get("payerUserId").isNull()
+                    ? UUID.fromString(node.get("payerUserId").asText())
+                    : (node.has("payerId") && !node.get("payerId").isNull()
+                    ? UUID.fromString(node.get("payerId").asText()) : null);
 
             if (payerUserId != null && paymentId != null) {
-                String title = "Payment Completed";
-                String body = "Your payment of amount " + (node.has("amount") ? node.get("amount").asText() : "") + " has been successfully processed.";
+                String body = "Your payment of amount "
+                        + (node.has("amount") ? node.get("amount").asText() : "")
+                        + " has been successfully processed.";
                 notificationService.createNotification(
-                        payerUserId,
-                        null,
+                        payerUserId, null,
                         NotificationTypeEnum.SYSTEM_ALERT,
-                        title,
-                        body,
+                        "Payment Completed", body,
                         RelatedEntityTypeEnum.PAYMENT,
-                        paymentId.toString(),
-                        null
+                        paymentId.toString(), null
                 );
             }
         } catch (Exception e) {
@@ -96,24 +96,21 @@ public class KafkaNotificationListener {
 
     @KafkaListener(topics = "payment-due", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
     public void handlePaymentDue(String message) {
-        log.info("Received payment-due event: {}", message);
+        log.info("Received payment-due event");
         try {
             JsonNode node = objectMapper.readTree(message);
-            UUID recipientUserId = node.has("recipientUserId") ? UUID.fromString(node.get("recipientUserId").asText()) : null;
-            UUID paymentId = node.has("paymentId") ? UUID.fromString(node.get("paymentId").asText()) : null;
-
+            UUID recipientUserId = extractUuid(node, "recipientUserId");
+            UUID paymentId = extractUuid(node, "paymentId");
             if (recipientUserId != null && paymentId != null) {
-                String title = "Payment Due Reminder";
-                String body = "You have a payment due of amount " + (node.has("amount") ? node.get("amount").asText() : "") + " on " + (node.has("dueDate") ? node.get("dueDate").asText() : "") + ".";
+                String body = "You have a payment due of amount "
+                        + (node.has("amount") ? node.get("amount").asText() : "")
+                        + " on " + (node.has("dueDate") ? node.get("dueDate").asText() : "") + ".";
                 notificationService.createNotification(
-                        recipientUserId,
-                        null,
+                        recipientUserId, null,
                         NotificationTypeEnum.PAYMENT_DUE,
-                        title,
-                        body,
+                        "Payment Due Reminder", body,
                         RelatedEntityTypeEnum.PAYMENT,
-                        paymentId.toString(),
-                        null
+                        paymentId.toString(), null
                 );
             }
         } catch (Exception e) {
@@ -123,24 +120,23 @@ public class KafkaNotificationListener {
 
     @KafkaListener(topics = "payment-overdue", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
     public void handlePaymentOverdue(String message) {
-        log.info("Received payment-overdue event: {}", message);
+        log.info("Received payment-overdue event");
         try {
             JsonNode node = objectMapper.readTree(message);
-            UUID recipientUserId = node.has("recipientUserId") ? UUID.fromString(node.get("recipientUserId").asText()) : null;
-            UUID paymentId = node.has("paymentId") ? UUID.fromString(node.get("paymentId").asText()) : null;
-
+            UUID recipientUserId = extractUuid(node, "recipientUserId");
+            UUID paymentId = extractUuid(node, "paymentId");
             if (recipientUserId != null && paymentId != null) {
-                String title = "Payment Overdue Warning";
-                String body = "Your payment of amount " + (node.has("amount") ? node.get("amount").asText() : "") + " is overdue by " + (node.has("daysOverdue") ? node.get("daysOverdue").asText() : "") + " days. Please complete it immediately.";
+                String body = "Your payment of amount "
+                        + (node.has("amount") ? node.get("amount").asText() : "")
+                        + " is overdue by "
+                        + (node.has("daysOverdue") ? node.get("daysOverdue").asText() : "")
+                        + " days. Please complete it immediately.";
                 notificationService.createNotification(
-                        recipientUserId,
-                        null,
+                        recipientUserId, null,
                         NotificationTypeEnum.PAYMENT_OVERDUE,
-                        title,
-                        body,
+                        "Payment Overdue Warning", body,
                         RelatedEntityTypeEnum.PAYMENT,
-                        paymentId.toString(),
-                        null
+                        paymentId.toString(), null
                 );
             }
         } catch (Exception e) {
@@ -150,46 +146,55 @@ public class KafkaNotificationListener {
 
     @KafkaListener(topics = "notification-requests", groupId = "${spring.kafka.consumer.group-id:notification-service-group}")
     public void handleNotificationRequest(String message) {
-        log.info("Received notification-requests event: {}", message);
+        log.info("Received notification-requests event");
         try {
             JsonNode node = objectMapper.readTree(message);
-            UUID recipientUserId = node.has("recipientUserId") ? UUID.fromString(node.get("recipientUserId").asText()) : null;
+            UUID recipientUserId = extractUuid(node, "recipientUserId");
             String title = node.has("title") ? node.get("title").asText() : "";
             String body = node.has("body") ? node.get("body").asText() : "";
             String notificationType = node.has("notificationType") ? node.get("notificationType").asText() : "SYSTEM_ALERT";
-            UUID relatedEntityId = node.has("relatedEntityId") && !node.get("relatedEntityId").isNull() ? UUID.fromString(node.get("relatedEntityId").asText()) : null;
-            String relatedEntityType = node.has("relatedEntityType") && !node.get("relatedEntityType").isNull() ? node.get("relatedEntityType").asText() : null;
+            UUID relatedEntityId = node.has("relatedEntityId") && !node.get("relatedEntityId").isNull()
+                    ? UUID.fromString(node.get("relatedEntityId").asText()) : null;
+            String relatedEntityType = node.has("relatedEntityType") && !node.get("relatedEntityType").isNull()
+                    ? node.get("relatedEntityType").asText() : null;
 
-            if (recipientUserId != null) {
-                NotificationTypeEnum typeEnum = NotificationTypeEnum.SYSTEM_ALERT;
-                try {
-                    typeEnum = NotificationTypeEnum.get(notificationType);
-                } catch (Exception e) {
-                    log.warn("Invalid notificationType: {}. Defaulting to SYSTEM_ALERT.", notificationType);
-                }
+            if (recipientUserId == null) return;
 
-                RelatedEntityTypeEnum entityTypeEnum = null;
-                if (relatedEntityType != null) {
-                    try {
-                        entityTypeEnum = RelatedEntityTypeEnum.get(relatedEntityType);
-                    } catch (Exception e) {
-                        log.warn("Invalid relatedEntityType: {}", relatedEntityType);
-                    }
-                }
-
-                notificationService.createNotification(
-                        recipientUserId,
-                        null,
-                        typeEnum,
-                        title,
-                        body,
-                        entityTypeEnum,
-                        relatedEntityId != null ? relatedEntityId.toString() : null,
-                        null
-                );
+            NotificationTypeEnum typeEnum = NotificationTypeEnum.SYSTEM_ALERT;
+            try {
+                typeEnum = NotificationTypeEnum.get(notificationType);
+            } catch (Exception e) {
+                log.warn("Invalid notificationType: {}. Defaulting to SYSTEM_ALERT.", notificationType);
             }
+
+            RelatedEntityTypeEnum entityTypeEnum = null;
+            if (relatedEntityType != null) {
+                try {
+                    entityTypeEnum = RelatedEntityTypeEnum.get(relatedEntityType);
+                } catch (Exception e) {
+                    log.warn("Invalid relatedEntityType: {}", relatedEntityType);
+                }
+            }
+
+            notificationService.createNotification(
+                    recipientUserId, null, typeEnum, title, body,
+                    entityTypeEnum,
+                    relatedEntityId != null ? relatedEntityId.toString() : null,
+                    null
+            );
         } catch (Exception e) {
             log.error("Error processing notification-requests event", e);
         }
+    }
+
+    // ---- Utility ----
+
+    private UUID extractUuid(JsonNode node, String field) {
+        if (!node.has(field) || node.get(field).isNull()) return null;
+        JsonNode fieldNode = node.get(field);
+        if (fieldNode.isObject() && fieldNode.has("value")) {
+            return UUID.fromString(fieldNode.get("value").asText());
+        }
+        return UUID.fromString(fieldNode.asText());
     }
 }

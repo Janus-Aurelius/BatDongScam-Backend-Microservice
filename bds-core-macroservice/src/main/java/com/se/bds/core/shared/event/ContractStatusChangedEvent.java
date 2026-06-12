@@ -12,6 +12,9 @@ public record ContractStatusChangedEvent(
         UUID customerId,
         String oldStatus,
         String newStatus,
+        UUID customerId,
+        UUID ownerId,
+        String propertyTitle,
         Instant occurredAt
 ) {
 }
