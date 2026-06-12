@@ -9,7 +9,6 @@ public record ContractStatusChangedEvent(
         ContractId contractId,
         String contractType,
         UUID propertyId,
-        UUID customerId,
         String oldStatus,
         String newStatus,
         UUID customerId,
@@ -17,4 +16,7 @@ public record ContractStatusChangedEvent(
         String propertyTitle,
         Instant occurredAt
 ) {
+    public ContractStatusChangedEvent(ContractId contractId, String contractType, UUID propertyId, UUID customerId, String oldStatus, String newStatus, Instant occurredAt) {
+        this(contractId, contractType, propertyId, oldStatus, newStatus, customerId, null, null, occurredAt);
+    }
 }

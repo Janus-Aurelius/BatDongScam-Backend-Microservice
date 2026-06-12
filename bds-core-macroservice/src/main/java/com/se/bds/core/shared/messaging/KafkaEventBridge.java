@@ -3,6 +3,7 @@ package com.se.bds.core.shared.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.se.bds.common.event.ContractStatusChangedFatEvent;
 import com.se.bds.common.event.PropertyCreatedEvent;
+import com.se.bds.common.event.PropertyDeletedEvent;
 import com.se.bds.common.event.PropertySearchedEvent;
 import com.se.bds.common.event.PropertyUpdatedEvent;
 import com.se.bds.core.property.api.event.*;
@@ -44,63 +45,13 @@ public class KafkaEventBridge {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyCreated(PropertyCreatedIntegrationEvent event) {
-        PropertyCreatedEvent fatEvent = new PropertyCreatedEvent(
-                event.propertyId().value(),
-                event.title(),
-                event.description(),
-                event.fullAddress(),
-                event.priceAmount(),
-                event.pricePerSquareMeter(),
-                event.commissionRate(),
-                event.serviceFeeAmount(),
-                event.area(),
-                event.rooms(),
-                event.bathrooms(),
-                event.floors(),
-                event.bedrooms(),
-                event.yearBuilt(),
-                event.transactionType() != null ? event.transactionType().name() : null,
-                event.status() != null ? event.status().name() : null,
-                event.houseOrientation() != null ? event.houseOrientation().name() : null,
-                event.balconyOrientation() != null ? event.balconyOrientation().name() : null,
-                event.ownerId(),
-                event.assignedAgentId(),
-                event.wardId(),
-                event.thumbnailUrl(),
-                Instant.now()
-        );
-        publish("property-created", event.propertyId().value().toString(), fatEvent);
+    public void handlePropertyCreated(PropertyCreatedEvent event) {
+        publish("property-created", event.propertyId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePropertyUpdated(PropertyUpdatedIntegrationEvent event) {
-        PropertyUpdatedEvent fatEvent = new PropertyUpdatedEvent(
-                event.propertyId().value(),
-                event.title(),
-                event.description(),
-                event.fullAddress(),
-                event.priceAmount(),
-                event.pricePerSquareMeter(),
-                event.commissionRate(),
-                event.serviceFeeAmount(),
-                event.area(),
-                event.rooms(),
-                event.bathrooms(),
-                event.floors(),
-                event.bedrooms(),
-                event.yearBuilt(),
-                event.transactionType() != null ? event.transactionType().name() : null,
-                event.status() != null ? event.status().name() : null,
-                event.houseOrientation() != null ? event.houseOrientation().name() : null,
-                event.balconyOrientation() != null ? event.balconyOrientation().name() : null,
-                event.ownerId(),
-                event.assignedAgentId(),
-                event.wardId(),
-                event.thumbnailUrl(),
-                Instant.now()
-        );
-        publish("property-updated", event.propertyId().value().toString(), fatEvent);
+    public void handlePropertyUpdated(PropertyUpdatedEvent event) {
+        publish("property-updated", event.propertyId().toString(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

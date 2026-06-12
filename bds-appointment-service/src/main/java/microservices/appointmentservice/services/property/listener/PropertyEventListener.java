@@ -88,9 +88,8 @@ public class PropertyEventListener {
     public void onPropertyDeleted(String message) {
         log.info("[KAFKA] Received property-deleted event");
         try {
-            Map<String, Object> eventMap = objectMapper.readValue(message, Map.class);
-            UUID propertyId = UUID.fromString(eventMap.get("propertyId").toString());
-            propertyRepository.findById(propertyId).ifPresent(property -> {
+            PropertyDeletedEvent event = objectMapper.readValue(message, PropertyDeletedEvent.class);
+            propertyRepository.findById(event.propertyId()).ifPresent(property -> {
                 property.setStatus(Constants.PropertyStatusEnum.DELETED);
                 propertyRepository.save(property);
                 log.info("[KAFKA] Marked property ID={} as DELETED locally", event.propertyId());

@@ -1,17 +1,13 @@
 package microservices.moderationservice.moderation.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.se.bds.common.event.PropertyCreatedEvent;
-import com.se.bds.common.event.PropertyDeletedEvent;
-import com.se.bds.common.event.PropertyUpdatedEvent;
-import com.se.bds.common.event.UserCreatedEvent;
-import com.se.bds.common.event.UserUpdatedEvent;
+import com.se.bds.common.event.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import microservices.moderationservice.moderation.entity.replica.PropertyReplica;
-import microservices.moderationservice.moderation.entity.replica.UserReplica;
-import microservices.moderationservice.moderation.repository.replica.PropertyReplicaRepository;
-import microservices.moderationservice.moderation.repository.replica.UserReplicaRepository;
+import microservices.moderationservice.moderation.entity.PropertyReplica;
+import microservices.moderationservice.moderation.entity.UserReplica;
+import microservices.moderationservice.moderation.repository.PropertyReplicaRepository;
+import microservices.moderationservice.moderation.repository.UserReplicaRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +29,8 @@ public class ReplicaSyncListener {
         try {
             PropertyCreatedEvent event = objectMapper.readValue(message, PropertyCreatedEvent.class);
             upsertProperty(event);
-            log.info("[REPLICA-SYNC] Upserted property replica from created event: propertyId={}, eventId={}",
-                    event.propertyId(), event.eventId());
+            log.info("[REPLICA-SYNC] Upserted property replica from created event: propertyId={}, occurredAt={}",
+                    event.propertyId(), event.occurredAt());
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-created event", e);
         }
@@ -46,8 +42,8 @@ public class ReplicaSyncListener {
         try {
             PropertyUpdatedEvent event = objectMapper.readValue(message, PropertyUpdatedEvent.class);
             upsertProperty(event);
-            log.info("[REPLICA-SYNC] Upserted property replica from updated event: propertyId={}, eventId={}",
-                    event.propertyId(), event.eventId());
+            log.info("[REPLICA-SYNC] Upserted property replica from updated event: propertyId={}, occurredAt={}",
+                    event.propertyId(), event.occurredAt());
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-updated event", e);
         }
@@ -58,120 +54,82 @@ public class ReplicaSyncListener {
     public void onPropertyDeleted(String message) {
         try {
             PropertyDeletedEvent event = objectMapper.readValue(message, PropertyDeletedEvent.class);
-            PropertyReplica replica = propertyReplicaRepository.findById(event.propertyId())
-                    .orElseGet(() -> PropertyReplica.builder().id(event.propertyId()).build());
-            replica.setStatus(event.status());
-            replica.setSourceUpdatedAt(event.occurredAt());
-            replica.setSyncedAt(LocalDateTime.now());
-            propertyReplicaRepository.save(replica);
-            log.info("[REPLICA-SYNC] Marked property replica deleted: propertyId={}, eventId={}",
-                    event.propertyId(), event.eventId());
+            propertyReplicaRepository.findById(event.propertyId()).ifPresent(replica -> {
+                replica.setStatus(event.status());
+                replica.setDeleted(true);
+                replica.setLastSyncedAt(LocalDateTime.now());
+                propertyReplicaRepository.save(replica);
+                log.info("[REPLICA-SYNC] Marked property replica deleted: propertyId={}, eventId={}",
+                        event.propertyId(), event.eventId());
+            });
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-deleted event", e);
         }
     }
 
-    @KafkaListener(topics = "user-created", groupId = "moderation-replica-group")
+    @KafkaListener(topics = "user-upserted", groupId = "moderation-replica-group")
     @Transactional
-    public void onUserCreated(String message) {
+    public void onUserUpserted(String message) {
         try {
-            UserCreatedEvent event = objectMapper.readValue(message, UserCreatedEvent.class);
+            UserUpsertedEvent event = objectMapper.readValue(message, UserUpsertedEvent.class);
             upsertUser(event);
-            log.info("[REPLICA-SYNC] Upserted user replica from created event: userId={}, eventId={}",
-                    event.userId(), event.eventId());
+            log.info("[REPLICA-SYNC] Upserted user replica from upserted event: userId={}, occurredAt={}",
+                    event.userId(), event.occurredAt());
         } catch (Exception e) {
-            log.error("[REPLICA-SYNC] Failed to process user-created event", e);
-        }
-    }
-
-    @KafkaListener(topics = "user-updated", groupId = "moderation-replica-group")
-    @Transactional
-    public void onUserUpdated(String message) {
-        try {
-            UserUpdatedEvent event = objectMapper.readValue(message, UserUpdatedEvent.class);
-            upsertUser(event);
-            log.info("[REPLICA-SYNC] Upserted user replica from updated event: userId={}, eventId={}",
-                    event.userId(), event.eventId());
-        } catch (Exception e) {
-            log.error("[REPLICA-SYNC] Failed to process user-updated event", e);
+            log.error("[REPLICA-SYNC] Failed to process user-upserted event", e);
         }
     }
 
     private void upsertProperty(PropertyCreatedEvent event) {
         PropertyReplica replica = propertyReplicaRepository.findById(event.propertyId())
-                .orElseGet(() -> PropertyReplica.builder().id(event.propertyId()).build());
-        applyProperty(replica, event.ownerId(), event.assignedAgentId(), event.title(), event.fullAddress(),
-                event.thumbnailUrl(), event.priceAmount(), event.status(), event.transactionType(), event.occurredAt());
+                .orElse(PropertyReplica.builder().propertyId(event.propertyId()).build());
+        
+        replica.setOwnerId(event.ownerId());
+        replica.setAssignedAgentId(event.assignedAgentId());
+        replica.setTitle(event.title());
+        replica.setFullAddress(event.fullAddress());
+        replica.setThumbnailUrl(event.thumbnailUrl());
+        replica.setPriceAmount(event.priceAmount());
+        replica.setStatus(event.status());
+        replica.setTransactionType(event.transactionType());
+        replica.setLastSyncedAt(LocalDateTime.now());
+        replica.setDeleted(false);
+        
         propertyReplicaRepository.save(replica);
     }
 
     private void upsertProperty(PropertyUpdatedEvent event) {
         PropertyReplica replica = propertyReplicaRepository.findById(event.propertyId())
-                .orElseGet(() -> PropertyReplica.builder().id(event.propertyId()).build());
-        applyProperty(replica, event.ownerId(), event.assignedAgentId(), event.title(), event.fullAddress(),
-                event.thumbnailUrl(), event.priceAmount(), event.status(), event.transactionType(), event.occurredAt());
+                .orElse(PropertyReplica.builder().propertyId(event.propertyId()).build());
+        
+        replica.setOwnerId(event.ownerId());
+        replica.setAssignedAgentId(event.assignedAgentId());
+        replica.setTitle(event.title());
+        replica.setFullAddress(event.fullAddress());
+        replica.setThumbnailUrl(event.thumbnailUrl());
+        replica.setPriceAmount(event.priceAmount());
+        replica.setStatus(event.status());
+        replica.setTransactionType(event.transactionType());
+        replica.setLastSyncedAt(LocalDateTime.now());
+        replica.setDeleted(false);
+        
         propertyReplicaRepository.save(replica);
     }
 
-    private void applyProperty(
-            PropertyReplica replica,
-            java.util.UUID ownerId,
-            java.util.UUID assignedAgentId,
-            String title,
-            String fullAddress,
-            String thumbnailUrl,
-            java.math.BigDecimal priceAmount,
-            String status,
-            String transactionType,
-            java.time.Instant occurredAt
-    ) {
-        replica.setOwnerId(ownerId);
-        replica.setAssignedAgentId(assignedAgentId);
-        replica.setTitle(title);
-        replica.setFullAddress(fullAddress);
-        replica.setThumbnailUrl(thumbnailUrl);
-        replica.setPriceAmount(priceAmount);
-        replica.setStatus(status);
-        replica.setTransactionType(transactionType);
-        replica.setSourceUpdatedAt(occurredAt);
-        replica.setSyncedAt(LocalDateTime.now());
-    }
-
-    private void upsertUser(UserCreatedEvent event) {
+    private void upsertUser(UserUpsertedEvent event) {
         UserReplica replica = userReplicaRepository.findById(event.userId())
-                .orElseGet(() -> UserReplica.builder().id(event.userId()).build());
-        applyUser(replica, event.fullName(), event.email(), event.phoneNumber(), event.avatarUrl(),
-                event.role(), event.status(), event.active(), event.occurredAt());
+                .orElse(UserReplica.builder().userId(event.userId()).build());
+        
+        replica.setFullName(event.fullName());
+        replica.setUsername(event.username());
+        replica.setEmail(event.email());
+        replica.setPhoneNumber(event.phoneNumber());
+        replica.setAvatarUrl(event.avatarUrl());
+        replica.setRole(event.role());
+        replica.setStatus(event.status());
+        replica.setActive(event.active());
+        replica.setLastSyncedAt(LocalDateTime.now());
+        
         userReplicaRepository.save(replica);
-    }
-
-    private void upsertUser(UserUpdatedEvent event) {
-        UserReplica replica = userReplicaRepository.findById(event.userId())
-                .orElseGet(() -> UserReplica.builder().id(event.userId()).build());
-        applyUser(replica, event.fullName(), event.email(), event.phoneNumber(), event.avatarUrl(),
-                event.role(), event.status(), event.active(), event.occurredAt());
-        userReplicaRepository.save(replica);
-    }
-
-    private void applyUser(
-            UserReplica replica,
-            String fullName,
-            String email,
-            String phoneNumber,
-            String avatarUrl,
-            String role,
-            String status,
-            Boolean active,
-            java.time.Instant occurredAt
-    ) {
-        replica.setFullName(fullName);
-        replica.setEmail(email);
-        replica.setPhoneNumber(phoneNumber);
-        replica.setAvatarUrl(avatarUrl);
-        replica.setRole(role);
-        replica.setStatus(status);
-        replica.setActive(active);
-        replica.setSourceUpdatedAt(occurredAt);
-        replica.setSyncedAt(LocalDateTime.now());
     }
 }
