@@ -5,6 +5,8 @@ import com.se361.iam_service.dto.request.RegisterRequest;
 import com.se361.iam_service.dto.response.TokenResponse;
 import com.se361.iam_service.service.AuthService;
 import com.se361.iam_service.util.Constants;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Endpoints for user login, registration, and token management")
 public class AuthController {
 
     private final AuthService authService;
@@ -23,11 +26,13 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
+    @Operation(summary = "Login to the system", description = "Authenticates user with email and password, returning access and refresh tokens.")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword(), request.getRememberMe()));
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user", description = "Allows CUSTOMER or PROPERTY_OWNER to register. Admin and Sales Agent registration must be handled by an administrator.")
     public ResponseEntity<Void> register(
             @Valid @ModelAttribute RegisterRequest request
     ) {

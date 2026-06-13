@@ -82,7 +82,9 @@ app:
     - /public/**
     - /auth/**
     - /api-docs/**
+    - /v3/api-docs/**
     - /swagger-ui/**
+    - /swagger-ui.html
     - /webjars/**
     - /webhooks/**
     - /actuator/**
@@ -103,3 +105,24 @@ management:
     web:
       exposure:
         include: health, info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: IAM Service
+        url: /api/auth/v3/api-docs
+      - name: Financial Service
+        url: /api/payments/v3/api-docs
+      - name: Appointment Service
+        url: /api/appointment/v3/api-docs
+      - name: Moderation Service
+        url: /api/violations/v3/api-docs
+      - name: Notification Service
+        url: /api/notifications/v3/api-docs
+      - name: Search Service
+        url: /api/search/v3/api-docs
+      - name: Core Service
+        url: /v3/api-docs
