@@ -1,16 +1,18 @@
 package com.se.bds.core.property.internal.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.UUID;
 
 @Entity
 @Table(name = "wards", schema = "property_catalog")
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Ward {
     @Id
     @Column(name = "ward_id", nullable = false)

@@ -147,6 +147,12 @@ public class PropertyEventListener {
         if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
         if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
         if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.serviceFeeCollectedAmount() != null) property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
+        if (event.propertyTypeId() != null) {
+            PropertyType pt = new PropertyType();
+            pt.setId(event.propertyTypeId());
+            property.setPropertyType(pt);
+        }
         if (event.ownerId() != null) property.setOwnerId(event.ownerId());
         if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
         if (event.wardId() != null) property.setWardId(event.wardId());
@@ -178,6 +184,12 @@ public class PropertyEventListener {
         if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
         if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
         if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.serviceFeeCollectedAmount() != null) property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
+        if (event.propertyTypeId() != null) {
+            PropertyType pt = new PropertyType();
+            pt.setId(event.propertyTypeId());
+            property.setPropertyType(pt);
+        }
         if (event.ownerId() != null) property.setOwnerId(event.ownerId());
         if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
         if (event.wardId() != null) property.setWardId(event.wardId());

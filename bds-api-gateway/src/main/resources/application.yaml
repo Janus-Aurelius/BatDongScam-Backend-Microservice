@@ -24,7 +24,7 @@ spring:
         - id: iam-service
           uri: lb://iam-service
           predicates:
-            - Path=/api/auth/**, /api/users/**
+            - Path=/api/auth/**, /api/users/**, /api/account/**
         # Appointment Service
         - id: appointment-service
           uri: lb://appointment-service
@@ -81,6 +81,7 @@ app:
     - /bookings/payment/**
     - /public/**
     - /auth/**
+    - /api/auth/**
     - /api-docs/**
     - /v3/api-docs/**
     - /swagger-ui/**

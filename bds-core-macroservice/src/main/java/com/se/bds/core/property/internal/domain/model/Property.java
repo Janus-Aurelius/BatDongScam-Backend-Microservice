@@ -1,5 +1,6 @@
 package com.se.bds.core.property.internal.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.message.validation.MSG12;
 import com.se.bds.common.message.validation.MSG13;
@@ -37,6 +38,7 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Property {
 
     @Id

@@ -1,16 +1,23 @@
 package com.se.bds.core.property.internal.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.UUID;
 
 @Entity
 @Table(name = "districts", schema = "property_catalog")
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class District {
     @Id
     @Column(name = "district_id", nullable = false)

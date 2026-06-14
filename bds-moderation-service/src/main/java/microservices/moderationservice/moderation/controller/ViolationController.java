@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +54,7 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/admin")
     @Operation(summary = "Get all violation reports (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<com.se.bds.common.dto.ApiResponse<PagedData<ViolationAdminItem>>> getAdminViolationItems(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
@@ -73,6 +75,7 @@ public class ViolationController extends AbstractBaseController {
 
     @GetMapping("/admin/{id}")
     @Operation(summary = "Get violation report details (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationAdminDetails>> getViolationAdminDetailsById(@PathVariable UUID id) {
         ViolationAdminDetails details = violationService.getViolationAdminDetailsById(id);
         return responseFactory.successSingle(details, "Violation details retrieved successfully");
@@ -80,6 +83,7 @@ public class ViolationController extends AbstractBaseController {
 
     @PutMapping("/admin/{id}")
     @Operation(summary = "Update violation report (Admin)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<com.se.bds.common.dto.ApiResponse<ViolationAdminDetails>> updateViolationReport(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateViolationRequest request

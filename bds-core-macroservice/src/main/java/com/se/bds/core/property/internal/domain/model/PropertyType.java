@@ -1,5 +1,6 @@
 package com.se.bds.core.property.internal.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,13 +9,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Lookup / reference-data entity representing a category of property
- * (e.g. "Apartment", "Villa", "Land").
- *
- * <p>The legacy bidirectional {@code @OneToMany List<Property> properties}
- * has been removed — the owning side ({@code Property.propertyType}) is sufficient.
- */
 @Entity
 @Table(name = "property_types", schema = "property_catalog")
 @Builder
@@ -22,6 +16,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PropertyType {
 
     @Id

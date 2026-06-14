@@ -21,21 +21,21 @@ public class DepositContractController {
     private final DepositContractUseCase depositContractUseCase;
     private final TransactionWebMapper  transactionWebMapper;
 
-    @PreAuthorize(("hasAnyRole('ADMIN', 'SALEAGENT')"))
+    @PreAuthorize(("hasAnyRole('ADMIN', 'SALESAGENT')"))
     @PostMapping
     public ResponseEntity<DepositContract> createDepositContract(@Valid @RequestBody CreateDepositContractWebRequest createDepositContractWebRequest) {
         CreateDepositContractCommand command = transactionWebMapper.toCreateDepositContractCommand(createDepositContractWebRequest);
         return ResponseEntity.ok(depositContractUseCase.createDepositContract(command));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/approve")
     public ResponseEntity<DepositContract> approveDepositContract(@PathVariable UUID contractId)
     {
         return ResponseEntity.ok(depositContractUseCase.approveDepositContract(contractId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/paperwork-complete")
     public ResponseEntity<DepositContract> markPaperworkComplete(@PathVariable UUID contractId)
     {

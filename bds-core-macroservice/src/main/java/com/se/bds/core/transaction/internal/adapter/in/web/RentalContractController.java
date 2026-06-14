@@ -22,14 +22,14 @@ public class RentalContractController {
     private final TransactionWebMapper transactionWebMapper;
     private final com.se.bds.core.transaction.internal.application.port.in.ContractPdfUseCase contractPdfUseCase;
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/generate-pdf")
     public ResponseEntity<Void> generateContractPdf(@PathVariable UUID contractId) {
         contractPdfUseCase.generateAndUploadContractPdf(contractId);
         return ResponseEntity.accepted().build();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping
     public ResponseEntity<RentalContract> createRentalContract(@Valid @RequestBody CreateRentalContractWebRequest createRentalContractWebRequest)
     {
@@ -37,14 +37,14 @@ public class RentalContractController {
         return ResponseEntity.ok(rentalContractUseCase.createRentalContract(createRentalContractCommand));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/approve")
     public ResponseEntity<RentalContract> approveRentalContract(@PathVariable UUID contractId)
     {
         return ResponseEntity.ok(rentalContractUseCase.approveRentalContract(contractId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/paperwork-complete")
     public ResponseEntity<RentalContract> markPaperworkComplete(@PathVariable UUID contractId)
     {

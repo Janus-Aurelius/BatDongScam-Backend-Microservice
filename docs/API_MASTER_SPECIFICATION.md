@@ -243,13 +243,14 @@ Submits a new violation report (e.g., scam, incorrect info).
 - **Request Body:** Multipart/Form-Data
   - `payload`: JSON string of `ViolationCreateRequest`
   - `evidenceFiles`: Array of files (optional)
+- **Violation Types:** `NON_COMPLIANCE_WITH_TERMS`, `MISREPRESENTATION_OF_PROPERTY`, `FRAUDULENT_LISTING`, `HARASSMENT`, `SCAM_ATTEMPT`, `INAPPROPRIATE_CONTENT`, `FAILURE_TO_DISCLOSE_INFORMATION`, `SPAM_OR_DUPLICATE_LISTING`
 - **Curl Example:**
 ```bash
 curl -X POST http://localhost:8080/api/violations \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -F 'payload={
     "reporterId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-    "violationType": "SCAM",
+    "violationType": "SCAM_ATTEMPT",
     "description": "The property owner is asking for advance payment via suspicious link.",
     "violationReportedType": "PROPERTY",
     "reportedId": "b1a2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
@@ -409,8 +410,10 @@ curl -X POST http://localhost:8080/contracts/purchases \
   -d '{
     "propertyId": "b1a2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
     "customerId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-    "totalPrice": 500000,
-    "depositAmount": 50000
+    "agreedPrice": 500000,
+    "advancePaymentAmount": 50000,
+    "advancePaymentDeadline": "2026-08-01",
+    "finalPaymentDeadline": "2026-12-31"
   }'
 ```
 
