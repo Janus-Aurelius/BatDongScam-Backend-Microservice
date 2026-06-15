@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   otel-collector:
@@ -78,4 +77,4 @@ services:
 networks:
   bds-network:
     name: bds-network
-    external: true
+    driver: bridge

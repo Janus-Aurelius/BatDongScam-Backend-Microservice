@@ -22,4 +22,6 @@ public interface LocationUseCase {
     void deleteCity(UUID cityId);
     void deleteDistrict(UUID districtId);
     void deleteWard(UUID wardId);
+
+    java.util.Map<UUID, String> resolveWardNames(java.util.List<UUID> wardIds);
 }

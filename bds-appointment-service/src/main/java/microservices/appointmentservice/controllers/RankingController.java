@@ -81,7 +81,55 @@ public class RankingController {
     public ResponseEntity<ApiResponse<IndividualPropertyOwnerContributionAll>> getPropertyOwnerAll(
             @PathVariable UUID propertyOwnerId
     ) {
-        IndividualPropertyOwnerContributionAll contribution = rankingService.getPropertyOwnerAll(propertyOwnerId);
-        return ResponseEntity.ok(ApiResponse.success(contribution));
+        IndividualPropertyOwnerContributionAll potential = rankingService.getPropertyOwnerAll(propertyOwnerId);
+        return ResponseEntity.ok(ApiResponse.success(potential));
     }
-}
+
+    @PostMapping("/batch/agents/month")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualSalesAgentPerformanceMonth>>> getSaleAgentsMonthBatch(
+            @RequestBody java.util.List<UUID> agentIds,
+            @RequestParam int month,
+            @RequestParam int year
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getSaleAgentsMonthBatch(agentIds, month, year)));
+    }
+
+    @PostMapping("/batch/agents/career")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualSalesAgentPerformanceCareer>>> getSaleAgentsCareerBatch(
+            @RequestBody java.util.List<UUID> agentIds
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getSaleAgentsCareerBatch(agentIds)));
+    }
+
+    @PostMapping("/batch/customers/month")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualCustomerPotentialMonth>>> getCustomersMonthBatch(
+            @RequestBody java.util.List<UUID> customerIds,
+            @RequestParam int month,
+            @RequestParam int year
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getCustomersMonthBatch(customerIds, month, year)));
+    }
+
+    @PostMapping("/batch/customers/all")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualCustomerPotentialAll>>> getCustomersAllBatch(
+            @RequestBody java.util.List<UUID> customerIds
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getCustomersAllBatch(customerIds)));
+    }
+
+    @PostMapping("/batch/property-owners/month")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualPropertyOwnerContributionMonth>>> getPropertyOwnersMonthBatch(
+            @RequestBody java.util.List<UUID> ownerIds,
+            @RequestParam int month,
+            @RequestParam int year
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getPropertyOwnersMonthBatch(ownerIds, month, year)));
+    }
+
+    @PostMapping("/batch/property-owners/all")
+    public ResponseEntity<ApiResponse<java.util.Map<UUID, IndividualPropertyOwnerContributionAll>>> getPropertyOwnersAllBatch(
+            @RequestBody java.util.List<UUID> ownerIds
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(rankingService.getPropertyOwnersAllBatch(ownerIds)));
+    }
+    }

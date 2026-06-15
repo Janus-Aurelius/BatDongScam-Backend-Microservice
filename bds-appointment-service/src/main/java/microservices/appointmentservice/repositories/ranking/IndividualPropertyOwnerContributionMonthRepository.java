@@ -12,4 +12,5 @@ public interface IndividualPropertyOwnerContributionMonthRepository
         extends MongoRepository<IndividualPropertyOwnerContributionMonth, String> {
 
     Optional<IndividualPropertyOwnerContributionMonth> findByOwnerIdAndMonthAndYear(UUID ownerId, Integer month, Integer year);
+    java.util.List<IndividualPropertyOwnerContributionMonth> findAllByOwnerIdInAndMonthAndYear(java.util.List<UUID> ownerIds, Integer month, Integer year);
 }

@@ -1,7 +1,6 @@
-package com.se.bds.security;
+package com.se361.financial_service.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import com.se.bds.security.HeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -15,17 +14,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class BdsSecurityAutoConfiguration {
+public class SecurityConfig {
 
     @Bean
-    @ConditionalOnMissingBean(HeaderAuthenticationFilter.class)
     public HeaderAuthenticationFilter headerAuthenticationFilter() {
         return new HeaderAuthenticationFilter();
     }
 
     @Bean
-    @ConditionalOnMissingBean(SecurityFilterChain.class)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, HeaderAuthenticationFilter headerAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -39,11 +36,12 @@ public class BdsSecurityAutoConfiguration {
                     "/swagger-ui.html",
                     "/webjars/**",
                     "/public/**",
+                    "/webhooks/**",
                     "/api/internal/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(headerAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

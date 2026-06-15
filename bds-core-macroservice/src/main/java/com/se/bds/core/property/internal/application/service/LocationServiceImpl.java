@@ -131,4 +131,23 @@ public class LocationServiceImpl implements LocationUseCase {
                 .orElseThrow(() -> new BusinessException("WARD_NOT_FOUND", "Ward not found: " + wardId));
         wardRepository.delete(ward);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, String> resolveWardNames(java.util.List<UUID> wardIds) {
+        if (wardIds == null || wardIds.isEmpty()) return java.util.Collections.emptyMap();
+        List<Ward> wards = wardRepository.findAllById(wardIds);
+        java.util.Map<UUID, String> result = new java.util.HashMap<>();
+        for (Ward ward : wards) {
+            String fullName = ward.getWardName();
+            if (ward.getDistrict() != null) {
+                fullName += ", " + ward.getDistrict().getDistrictName();
+                if (ward.getDistrict().getCity() != null) {
+                    fullName += ", " + ward.getDistrict().getCity().getCityName();
+                }
+            }
+            result.put(ward.getId(), fullName);
+        }
+        return result;
+    }
 }

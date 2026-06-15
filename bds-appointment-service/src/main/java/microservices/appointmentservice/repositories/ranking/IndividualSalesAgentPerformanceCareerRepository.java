@@ -12,4 +12,5 @@ public interface IndividualSalesAgentPerformanceCareerRepository
         extends MongoRepository<IndividualSalesAgentPerformanceCareer, String> {
 
     Optional<IndividualSalesAgentPerformanceCareer> findByAgentId(UUID agentId);
+    java.util.List<IndividualSalesAgentPerformanceCareer> findAllByAgentIdIn(java.util.List<UUID> agentIds);
 }

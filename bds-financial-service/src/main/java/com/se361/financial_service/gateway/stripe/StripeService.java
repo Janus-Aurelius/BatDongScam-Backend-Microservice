@@ -30,7 +30,8 @@ public class StripeService implements PaymentGatewayService {
     @PostConstruct
     public void init() {
         Stripe.apiKey = apiKey;
-        log.info("Initialized Stripe SDK with configured API key");
+        Stripe.setMaxNetworkRetries(3);
+        log.info("Initialized Stripe SDK with configured API key and max retries=3");
     }
 
     private RequestOptions getOptions(String idempotencyKey) {

@@ -418,7 +418,8 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.logback-appender.enabled=false -Dotel.instrumentation.logback.enabled=false -Djava.net.preferIPv4Stack=true -Xms128m -Xmx320m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1"
+      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.logback-appender.enabled=false -Dotel.instrumentation.logback.enabled=false -Djava.net.preferIPv4Stack=true -Xms256m -Xmx512m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1"
+      OTEL_JAVAAGENT_ENABLED: ${OTEL_JAVAAGENT_ENABLED:-false}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_RESOURCE_ATTRIBUTES: service.name=financial-service
@@ -427,7 +428,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 448M
+          memory: 640M
     entrypoint: ["java", "-jar", "bds-financial-service-0.0.1-SNAPSHOT.jar"]
     depends_on:
       eureka-server:

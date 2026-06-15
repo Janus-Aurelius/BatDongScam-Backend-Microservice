@@ -34,7 +34,7 @@ public class OutboxPublisher {
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    @Scheduled(fixedDelay = 500)
+    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void relayPendingEvents() {
         List<OutboxEvent> pendingEvents = outboxEventRepository.findPendingEvents();

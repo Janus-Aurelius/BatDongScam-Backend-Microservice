@@ -2,6 +2,11 @@ server:
   port: ${SERVER_PORT:8081}
 
 spring:
+  cache:
+    type: redis
+  data:
+    redis:
+      time-to-live: 3600000 # 1 hour default expiration to prevent permanent cache leaks
   application:
     name: core-macroservice
   flyway:
@@ -57,6 +62,16 @@ iam:
 resilience4j:
   circuitbreaker:
     instances:
+      iamUserValidation:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        ignoreExceptions:
+          - com.se.bds.common.exception.BusinessException
       searchServiceCircuitBreaker:
         slidingWindowSize: 10
         failureRateThreshold: 50

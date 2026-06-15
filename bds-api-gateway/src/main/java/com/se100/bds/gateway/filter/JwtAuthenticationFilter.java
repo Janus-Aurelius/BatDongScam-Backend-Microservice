@@ -203,8 +203,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(this::extractPublicKeyFromJwks)
-                .timeout(java.time.Duration.ofSeconds(5))
-                .onErrorMap(e -> new RuntimeException("Failed to fetch JWKS: " + e.getMessage(), e));
+                .timeout(java.time.Duration.ofSeconds(3))
+                .onErrorResume(e -> {
+                    if (cachedPublicKey != null) {
+                        log.warn("Failed to fetch fresh JWKS. Falling back to cached public key. Error: {}", e.getMessage());
+                        return Mono.just(cachedPublicKey);
+                    }
+                    return Mono.error(new RuntimeException("Failed to fetch initial JWKS and no cached key is available: " + e.getMessage(), e));
+                });
     }
 
     @SuppressWarnings("unchecked")

@@ -179,6 +179,66 @@ public class RankingServiceImpl implements RankingService {
     }
 
     @Override
+    public java.util.Map<UUID, IndividualSalesAgentPerformanceMonth> getSaleAgentsMonthBatch(java.util.List<UUID> agentIds, int month, int year) {
+        java.util.List<IndividualSalesAgentPerformanceMonth> records = agentMonthRepo.findAllByAgentIdInAndMonthAndYear(agentIds, month, year);
+        java.util.Map<UUID, IndividualSalesAgentPerformanceMonth> result = new java.util.HashMap<>();
+        for (IndividualSalesAgentPerformanceMonth record : records) {
+            result.put(record.getAgentId(), record);
+        }
+        return result;
+    }
+
+    @Override
+    public java.util.Map<UUID, IndividualSalesAgentPerformanceCareer> getSaleAgentsCareerBatch(java.util.List<UUID> agentIds) {
+        java.util.List<IndividualSalesAgentPerformanceCareer> records = agentCareerRepo.findAllByAgentIdIn(agentIds);
+        java.util.Map<UUID, IndividualSalesAgentPerformanceCareer> result = new java.util.HashMap<>();
+        for (IndividualSalesAgentPerformanceCareer record : records) {
+            result.put(record.getAgentId(), record);
+        }
+        return result;
+    }
+
+    @Override
+    public java.util.Map<UUID, IndividualCustomerPotentialMonth> getCustomersMonthBatch(java.util.List<UUID> customerIds, int month, int year) {
+        java.util.List<IndividualCustomerPotentialMonth> records = customerMonthRepo.findAllByCustomerIdInAndMonthAndYear(customerIds, month, year);
+        java.util.Map<UUID, IndividualCustomerPotentialMonth> result = new java.util.HashMap<>();
+        for (IndividualCustomerPotentialMonth record : records) {
+            result.put(record.getCustomerId(), record);
+        }
+        return result;
+    }
+
+    @Override
+    public java.util.Map<UUID, IndividualCustomerPotentialAll> getCustomersAllBatch(java.util.List<UUID> customerIds) {
+        java.util.List<IndividualCustomerPotentialAll> records = customerAllRepo.findAllByCustomerIdIn(customerIds);
+        java.util.Map<UUID, IndividualCustomerPotentialAll> result = new java.util.HashMap<>();
+        for (IndividualCustomerPotentialAll record : records) {
+            result.put(record.getCustomerId(), record);
+        }
+        return result;
+    }
+
+    @Override
+    public java.util.Map<UUID, IndividualPropertyOwnerContributionMonth> getPropertyOwnersMonthBatch(java.util.List<UUID> ownerIds, int month, int year) {
+        java.util.List<IndividualPropertyOwnerContributionMonth> records = ownerMonthRepo.findAllByOwnerIdInAndMonthAndYear(ownerIds, month, year);
+        java.util.Map<UUID, IndividualPropertyOwnerContributionMonth> result = new java.util.HashMap<>();
+        for (IndividualPropertyOwnerContributionMonth record : records) {
+            result.put(record.getOwnerId(), record);
+        }
+        return result;
+    }
+
+    @Override
+    public java.util.Map<UUID, IndividualPropertyOwnerContributionAll> getPropertyOwnersAllBatch(java.util.List<UUID> ownerIds) {
+        java.util.List<IndividualPropertyOwnerContributionAll> records = ownerAllRepo.findAllByOwnerIdIn(ownerIds);
+        java.util.Map<UUID, IndividualPropertyOwnerContributionAll> result = new java.util.HashMap<>();
+        for (IndividualPropertyOwnerContributionAll record : records) {
+            result.put(record.getOwnerId(), record);
+        }
+        return result;
+    }
+
+    @Override
     public IndividualSalesAgentPerformanceMonth getMySaleAgentMonth(int month, int year) {
         throw new UnsupportedOperationException("Use getSaleAgentMonth with explicit agentId");
     }
