@@ -20,6 +20,16 @@ public interface NotificationService {
             String relatedEntityId,
             String imgUrl
     );
+    void createNotificationAsync(
+            UUID recipientId,
+            String fcmToken,
+            NotificationTypeEnum type,
+            String title,
+            String message,
+            RelatedEntityTypeEnum relatedEntityType,
+            String relatedEntityId,
+            String imgUrl
+    );
     Page<NotificationItem> getMyNotifications(UUID currentUserId, Pageable pageable);
     NotificationDetails getNotificationDetailsById(UUID currentUserId, UUID notificationId);
     NotificationDetails markAsRead(UUID currentUserId, UUID notificationId);

@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.se361.iam_service.security.JwtTokenProvider;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.util.Map;
 
 @RestController
@@ -27,6 +28,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login to the system", description = "Authenticates user with email and password, returning access and refresh tokens.")
+    @RateLimiter(name = "loginLimiter")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request.getEmail(), request.getPassword(), request.getRememberMe()));
     }

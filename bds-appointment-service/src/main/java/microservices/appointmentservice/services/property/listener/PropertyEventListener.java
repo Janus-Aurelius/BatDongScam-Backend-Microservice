@@ -55,6 +55,7 @@ public class PropertyEventListener {
             log.info("[KAFKA] Synchronized created property ID={}", event.propertyId());
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-created event", e);
+            throw new RuntimeException("Failed to process property-created event", e);
         }
     }
 
@@ -81,6 +82,7 @@ public class PropertyEventListener {
             log.info("[KAFKA] Synchronized updated property ID={}", event.propertyId());
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-updated event", e);
+            throw new RuntimeException("Failed to process property-updated event", e);
         }
     }
 
@@ -96,6 +98,7 @@ public class PropertyEventListener {
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-deleted event", e);
+            throw new RuntimeException("Failed to process property-deleted event", e);
         }
     }
 
@@ -111,6 +114,7 @@ public class PropertyEventListener {
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-status-changed event", e);
+            throw new RuntimeException("Failed to process property-status-changed event", e);
         }
     }
 
@@ -128,6 +132,7 @@ public class PropertyEventListener {
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-agent-assigned event", e);
+            throw new RuntimeException("Failed to process property-agent-assigned event", e);
         }
     }
 

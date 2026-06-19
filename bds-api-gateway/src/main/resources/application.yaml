@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   cloud:
     gateway:
       httpclient:
@@ -15,36 +19,89 @@ spring:
           uri: lb://search-service
           predicates:
             - Path=/api/search/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
         # Notification Service
         - id: notification-service
           uri: lb://notification-service
           predicates:
             - Path=/api/notifications/**
-        # IAM Service
-        - id: iam-service
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
+        # IAM Service Login & Register (Highly restricted)
+        - id: iam-service-auth
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/auth/login, /api/auth/register
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@ipOrUserKeyResolver}"
+        # IAM Service General
+        - id: iam-service-general
           uri: lb://iam-service
           predicates:
             - Path=/api/auth/**, /api/users/**, /api/account/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
         # Appointment Service
         - id: appointment-service
           uri: lb://appointment-service
           predicates:
             - Path=/api/appointment/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
         # Financial Service
         - id: financial-service
           uri: lb://financial-service
           predicates:
             - Path=/api/payments/**, /api/commissions/**, /webhooks/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
         # Moderation Service
         - id: moderation-service
           uri: lb://moderation-service
           predicates:
             - Path=/api/violations/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
         # Core Macroservice (Catch all)
         - id: core-service
           uri: lb://core-macroservice
           predicates:
             - Path=/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipOrUserKeyResolver}"
       globalcors:
         cors-configurations:
           '[/**]':

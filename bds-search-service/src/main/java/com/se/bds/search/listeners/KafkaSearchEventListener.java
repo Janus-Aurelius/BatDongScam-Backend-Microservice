@@ -34,6 +34,7 @@ public class KafkaSearchEventListener {
             }
         } catch (Exception e) {
             log.error("Failed to process property-searched event", e);
+            throw new RuntimeException("Failed to process property-searched event", e);
         }
     }
 
@@ -45,6 +46,7 @@ public class KafkaSearchEventListener {
             searchService.handlePropertyStatusChanged(event);
         } catch (Exception e) {
             log.error("Failed to process property-status-changed event", e);
+            throw new RuntimeException("Failed to process property-status-changed event", e);
         }
     }
 }

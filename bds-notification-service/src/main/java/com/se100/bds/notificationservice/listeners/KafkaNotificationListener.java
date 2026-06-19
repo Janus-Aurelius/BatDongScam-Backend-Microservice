@@ -63,6 +63,7 @@ public class KafkaNotificationListener {
             );
         } catch (Exception e) {
             log.error("Error processing contract-status-changed event", e);
+            throw new RuntimeException("Failed to process contract-status-changed event", e);
         }
     }
 
@@ -91,6 +92,7 @@ public class KafkaNotificationListener {
             }
         } catch (Exception e) {
             log.error("Error processing payment-completed event", e);
+            throw new RuntimeException("Failed to process payment-completed event", e);
         }
     }
 
@@ -115,6 +117,7 @@ public class KafkaNotificationListener {
             }
         } catch (Exception e) {
             log.error("Error processing payment-due event", e);
+            throw new RuntimeException("Failed to process payment-due event", e);
         }
     }
 
@@ -141,6 +144,7 @@ public class KafkaNotificationListener {
             }
         } catch (Exception e) {
             log.error("Error processing payment-overdue event", e);
+            throw new RuntimeException("Failed to process payment-overdue event", e);
         }
     }
 
@@ -184,6 +188,7 @@ public class KafkaNotificationListener {
             );
         } catch (Exception e) {
             log.error("Error processing notification-requests event", e);
+            throw new RuntimeException("Failed to process notification-requests event", e);
         }
     }
 

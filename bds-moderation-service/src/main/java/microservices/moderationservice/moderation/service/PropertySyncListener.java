@@ -41,6 +41,7 @@ public class PropertySyncListener {
             log.info("[SYNC] PropertyReplica upserted for propertyId={}", event.propertyId());
         } catch (Exception e) {
             log.error("[SYNC] Failed to process property-created event: {}", message, e);
+            throw new RuntimeException("Failed to process property-created event", e);
         }
     }
 
@@ -58,6 +59,7 @@ public class PropertySyncListener {
             log.info("[SYNC] PropertyReplica updated for propertyId={}", event.propertyId());
         } catch (Exception e) {
             log.error("[SYNC] Failed to process property-updated event: {}", message, e);
+            throw new RuntimeException("Failed to process property-updated event", e);
         }
     }
 
@@ -78,6 +80,7 @@ public class PropertySyncListener {
             });
         } catch (Exception e) {
             log.error("[SYNC] Failed to process property-status-changed event: {}", message, e);
+            throw new RuntimeException("Failed to process property-status-changed event", e);
         }
     }
 
@@ -100,6 +103,7 @@ public class PropertySyncListener {
             });
         } catch (Exception e) {
             log.error("[SYNC] Failed to process property-deleted event: {}", message, e);
+            throw new RuntimeException("Failed to process property-deleted event", e);
         }
     }
 

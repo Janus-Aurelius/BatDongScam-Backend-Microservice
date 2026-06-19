@@ -41,6 +41,13 @@ public class TransactionGlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(java.util.concurrent.RejectedExecutionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRejectedExecutionException(java.util.concurrent.RejectedExecutionException ex) {
+        log.error("[RejectedExecutionException] Queue saturated: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.error("Too Many Requests: System queue is full. Please try again later."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleAllUncaughtException(Exception ex) {
         log.error("[Centralized Error Tracking] Unexpected error in Transaction", ex);

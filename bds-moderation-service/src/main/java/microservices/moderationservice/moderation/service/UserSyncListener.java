@@ -60,6 +60,7 @@ public class UserSyncListener {
             log.info("[SYNC] UserReplica upserted for userId={}", event.userId());
         } catch (Exception e) {
             log.error("[SYNC] Failed to process user-upserted event: {}", message, e);
+            throw new RuntimeException("Failed to process user-upserted event", e);
         }
     }
 }

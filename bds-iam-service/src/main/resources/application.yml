@@ -62,3 +62,11 @@ cloudinary:
   cloud-name: ${CLOUD_NAME:default}
   api-key: ${CLOUDINARY_API_KEY:default}
   api-secret: ${CLOUDINARY_API_SECRET:default}
+
+resilience4j:
+  ratelimiter:
+    instances:
+      loginLimiter:
+        limitForPeriod: 5
+        limitRefreshPeriod: 1m
+        timeoutDuration: 0s

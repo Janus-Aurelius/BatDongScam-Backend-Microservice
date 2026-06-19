@@ -33,6 +33,7 @@ public class ReplicaSyncListener {
                     event.propertyId(), event.occurredAt());
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-created event", e);
+            throw new RuntimeException("Failed to process property-created event", e);
         }
     }
 
@@ -46,6 +47,7 @@ public class ReplicaSyncListener {
                     event.propertyId(), event.occurredAt());
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-updated event", e);
+            throw new RuntimeException("Failed to process property-updated event", e);
         }
     }
 
@@ -64,6 +66,7 @@ public class ReplicaSyncListener {
             });
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process property-deleted event", e);
+            throw new RuntimeException("Failed to process property-deleted event", e);
         }
     }
 
@@ -77,6 +80,7 @@ public class ReplicaSyncListener {
                     event.userId(), event.occurredAt());
         } catch (Exception e) {
             log.error("[REPLICA-SYNC] Failed to process user-upserted event", e);
+            throw new RuntimeException("Failed to process user-upserted event", e);
         }
     }
 
