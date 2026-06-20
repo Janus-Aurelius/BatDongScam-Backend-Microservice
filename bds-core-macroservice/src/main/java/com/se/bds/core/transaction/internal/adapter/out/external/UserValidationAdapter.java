@@ -27,16 +27,17 @@ public class UserValidationAdapter implements UserValidationPort {
     private String iamServiceUrl;
 
     @Override
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "iamUserValidation", fallbackMethod = "fallbackValidateCustomer")
     public void validateCustomer(UUID customerId) {
         validateUser(customerId, "CUSTOMER");
     }
 
     @Override
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "iamUserValidation", fallbackMethod = "fallbackValidateAgent")
     public void validateAgent(UUID agentId) {
         validateUser(agentId, "SALESAGENT");
     }
 
-    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "iamUserValidation", fallbackMethod = "fallbackValidateUser")
     private void validateUser(UUID userId, String role) {
         if (userId == null) {
             return;
@@ -58,13 +59,23 @@ public class UserValidationAdapter implements UserValidationPort {
         }
     }
 
-    // Fallback method executes when Circuit Breaker is open
-    private void fallbackValidateUser(UUID userId, String role, Throwable throwable) {
+    // Fallback method for customer validation
+    private void fallbackValidateCustomer(UUID customerId, Throwable throwable) {
         if (throwable instanceof BusinessException) {
             throw (BusinessException) throwable;
         }
-        log.error("Resilience fallback triggered for user validation (userId={}, role={}). Reason: {}", 
-                userId, role, throwable.getMessage());
+        log.error("Resilience fallback triggered for customer validation (customerId={}). Reason: {}", 
+                customerId, throwable.getMessage());
+        throw new BusinessException(MSG12.CODE, "Identity validation service is currently unavailable. Please try again later.");
+    }
+
+    // Fallback method for agent validation
+    private void fallbackValidateAgent(UUID agentId, Throwable throwable) {
+        if (throwable instanceof BusinessException) {
+            throw (BusinessException) throwable;
+        }
+        log.error("Resilience fallback triggered for agent validation (agentId={}). Reason: {}", 
+                agentId, throwable.getMessage());
         throw new BusinessException(MSG12.CODE, "Identity validation service is currently unavailable. Please try again later.");
     }
 }

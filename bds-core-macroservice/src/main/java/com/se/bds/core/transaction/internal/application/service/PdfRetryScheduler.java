@@ -5,6 +5,7 @@ import com.se.bds.core.transaction.internal.domain.model.PdfStatus;
 import com.se.bds.core.transaction.internal.domain.model.RentalContract;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ public class PdfRetryScheduler {
     private final ContractPdfService contractPdfService;
 
     @Scheduled(fixedDelay = 60000) // Check for failures every 60 seconds
+    @SchedulerLock(name = "pdfRetryLock", lockAtMostFor = "55s", lockAtLeastFor = "10s")
     public void retryFailedPdfUploads() {
         log.debug("[EVENT] Scanning for failed PDF contract uploads to retry...");
         List<RentalContract> failedContracts = rentalContractRepository.findByPdfUrl("PENDING_UPLOAD");

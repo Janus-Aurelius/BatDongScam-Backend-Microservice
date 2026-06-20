@@ -10,6 +10,7 @@ import com.se.bds.core.transaction.internal.application.port.out.RentalContractR
 import com.se.bds.core.transaction.internal.domain.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class RentalContractScheduler {
      * Also checks for unpaid previous month payments and updates penalty tracking.
      */
     @Scheduled(cron = "0 5 0 1 * *")
+    @SchedulerLock(name = "monthlyRentPaymentsLock", lockAtMostFor = "12h", lockAtLeastFor = "10m")
     @Transactional
     public void processMonthlyRentPayments() {
         log.info("[RentalContractScheduler] Starting monthly rent payment processing...");
@@ -71,6 +73,7 @@ public class RentalContractScheduler {
      * Checks for rental contracts that have ended and marks them as COMPLETED.
      */
     @Scheduled(cron = "0 10 0 * * *")
+    @SchedulerLock(name = "contractCompletionLock", lockAtMostFor = "12h", lockAtLeastFor = "10m")
     @Transactional
     public void checkContractCompletion() {
         log.info("[RentalContractScheduler] Starting contract completion check...");
@@ -100,6 +103,7 @@ public class RentalContractScheduler {
      * Checks for overdue payments and updates penalty tracking.
      */
     @Scheduled(cron = "0 15 0 * * *")
+    @SchedulerLock(name = "latePaymentsLock", lockAtMostFor = "12h", lockAtLeastFor = "10m")
     @Transactional
     public void checkLatePayments() {
         log.info("[RentalContractScheduler] Starting late payment check...");

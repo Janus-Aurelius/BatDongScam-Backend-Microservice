@@ -80,4 +80,12 @@ resilience4j:
     instances:
       searchServiceRetry:
         maxAttempts: 3
-        waitDuration: 2000
+        waitDuration: 2000
+  bulkhead:
+    instances:
+      pdfGenerationBulkhead:
+        maxConcurrentCalls: 3
+        maxWaitDuration: 100ms
+      reportExportBulkhead:
+        maxConcurrentCalls: 2
+        maxWaitDuration: 100ms
