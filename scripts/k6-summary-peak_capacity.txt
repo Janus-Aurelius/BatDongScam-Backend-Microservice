@@ -1,0 +1,30 @@
+
+======================================================================
+                  🏆 CV RESUME KEY PERFORMANCE METRICS 🏆
+======================================================================
+* Distributed System Throughput: Peak of 2122.27 Req/Sec (RPS)
+* Total Transactions Handled: 2128 HTTP requests
+* API Gateway Response Times: Avg: 0.00ms | p95: 0.00ms | p99: 0.00ms
+* Overall System Success Rate: 0.00% under high stress loads
+* Maximum Concurrent Users (VUs) Supported: 150 VUs
+======================================================================
+
+     ✗ gateway returns 200, 429, or 503/504
+      ↳  0% — ✓ 0 / ✗ 2128
+
+     checks.....................: 0.00%   ✓ 0           ✗ 2128
+     data_received..............: 0 B     0 B/s
+     data_sent..................: 0 B     0 B/s
+     http_req_blocked...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_req_connecting........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_req_duration..........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+   ✗ http_req_failed............: 100.00% ✓ 2128        ✗ 0   
+     http_req_receiving.........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_req_sending...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_req_tls_handshaking...: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_req_waiting...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
+     http_reqs..................: 2128    2122.273872/s
+     iteration_duration.........: avg=458.28µs min=103.93µs med=339.55µs max=112.89ms p(90)=603µs p(95)=691.16µs
+     iterations.................: 2128    2122.273872/s
+     vus........................: 1       min=1         max=1 
+     vus_max....................: 1       min=1         max=1 

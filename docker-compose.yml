@@ -186,7 +186,7 @@ services:
 
   core-macroservice:
     image: eclipse-temurin:21-jre-jammy
-    container_name: bds-core-macroservice
+    # container_name: bds-core-macroservice
     ports:
       - "8091:8081"
     volumes:

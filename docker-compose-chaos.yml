@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # Redis service for Gateway Rate Limiter and Core Cache
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: bds-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - bds-network
+
+  # ----------------------------------------------------------------------------
+  # Gateway Override
+  # ----------------------------------------------------------------------------
+  api-gateway:
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - REDIS_HOST=redis
+    entrypoint: ["sh", "-c", "apt-get update -qq && apt-get install -y -qq iptables iproute2 && java -jar bds-api-gateway-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      redis:
+        condition: service_started
+
+  # ----------------------------------------------------------------------------
+  # IAM Service Override
+  # ----------------------------------------------------------------------------
+  iam-service:
+    cap_add:
+      - NET_ADMIN
+    entrypoint: ["sh", "-c", "apt-get update -qq && apt-get install -y -qq iptables iproute2 && env && java -jar bds-iam-service-0.0.1-SNAPSHOT.jar"]
+
+  # ----------------------------------------------------------------------------
+  # Core Macroservice Override (scaled from 1 to 3 instances)
+  # ----------------------------------------------------------------------------
+  core-macroservice:
+    cap_add:
+      - NET_ADMIN
+    # Map a range of host ports to port 8081 inside the containers to avoid conflicts when scaled
+    ports:
+      - "8091-8093:8081"
+    environment:
+      - REDIS_HOST=redis
+    entrypoint: ["sh", "-c", "apt-get update -qq && apt-get install -y -qq iptables iproute2 && env && java -jar bds-core-macroservice-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      redis:
+        condition: service_started
+
+  # ----------------------------------------------------------------------------
+  # Financial Service Override
+  # ----------------------------------------------------------------------------
+  financial-service:
+    cap_add:
+      - NET_ADMIN
+    entrypoint: ["sh", "-c", "apt-get update -qq && apt-get install -y -qq iptables iproute2 && java -jar bds-financial-service-0.0.1-SNAPSHOT.jar"]
