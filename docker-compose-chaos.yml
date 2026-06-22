@@ -41,7 +41,7 @@ services:
       - NET_ADMIN
     # Map a range of host ports to port 8081 inside the containers to avoid conflicts when scaled
     ports:
-      - "8091-8093:8081"
+      - "8090-8092:8081"
     environment:
       - REDIS_HOST=redis
     entrypoint: ["sh", "-c", "apt-get update -qq && apt-get install -y -qq iptables iproute2 && env && java -jar bds-core-macroservice-0.0.1-SNAPSHOT.jar"]

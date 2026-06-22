@@ -2,29 +2,29 @@
 ======================================================================
                   🏆 CV RESUME KEY PERFORMANCE METRICS 🏆
 ======================================================================
-* Distributed System Throughput: Peak of 2122.27 Req/Sec (RPS)
-* Total Transactions Handled: 2128 HTTP requests
-* API Gateway Response Times: Avg: 0.00ms | p95: 0.00ms | p99: 0.00ms
-* Overall System Success Rate: 0.00% under high stress loads
+* Distributed System Throughput: Peak of 515.03 Req/Sec (RPS)
+* Total Transactions Handled: 20601 HTTP requests
+* API Gateway Response Times: Avg: 200.70ms | p95: 331.70ms | p99: 0.00ms
+* Overall System Success Rate: 8.68% under high stress loads
 * Maximum Concurrent Users (VUs) Supported: 150 VUs
 ======================================================================
 
-     ✗ gateway returns 200, 429, or 503/504
-      ↳  0% — ✓ 0 / ✗ 2128
+     ✓ gateway returns 200, 429, or 503/504
 
-     checks.....................: 0.00%   ✓ 0           ✗ 2128
-     data_received..............: 0 B     0 B/s
-     data_sent..................: 0 B     0 B/s
-     http_req_blocked...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_req_connecting........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_req_duration..........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-   ✗ http_req_failed............: 100.00% ✓ 2128        ✗ 0   
-     http_req_receiving.........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_req_sending...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_req_tls_handshaking...: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_req_waiting...........: avg=0s       min=0s       med=0s       max=0s       p(90)=0s    p(95)=0s      
-     http_reqs..................: 2128    2122.273872/s
-     iteration_duration.........: avg=458.28µs min=103.93µs med=339.55µs max=112.89ms p(90)=603µs p(95)=691.16µs
-     iterations.................: 2128    2122.273872/s
-     vus........................: 1       min=1         max=1 
-     vus_max....................: 1       min=1         max=1 
+     checks.........................: 100.00% ✓ 20601      ✗ 0    
+     data_received..................: 9.1 MB  228 kB/s
+     data_sent......................: 4.0 MB  99 kB/s
+     http_req_blocked...............: avg=8.7µs    min=1.05µs  med=5.61µs  max=635.04µs p(90)=8.82µs   p(95)=10.55µs 
+     http_req_connecting............: avg=1.35µs   min=0s      med=0s      max=314.69µs p(90)=0s       p(95)=0s      
+     http_req_duration..............: avg=200.69ms min=2.57ms  med=80.34ms max=10.1s    p(90)=267.76ms p(95)=331.69ms
+       { expected_response:true }...: avg=657.77ms min=9.49ms  med=207.2ms max=10.1s    p(90)=817.67ms p(95)=4.54s   
+   ✓ http_req_failed................: 91.31%  ✓ 18812      ✗ 1789 
+     http_req_receiving.............: avg=1.51ms   min=12.72µs med=89.56µs max=293.92ms p(90)=271.7µs  p(95)=1.99ms  
+     http_req_sending...............: avg=24.8µs   min=3.3µs   med=16.95µs max=2.85ms   p(90)=49.67µs  p(95)=70.45µs 
+     http_req_tls_handshaking.......: avg=0s       min=0s      med=0s      max=0s       p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=199.15ms min=2.45ms  med=80ms    max=10.06s   p(90)=266.98ms p(95)=323.3ms 
+     http_reqs......................: 20601   515.032806/s
+     iteration_duration.............: avg=200.91ms min=2.7ms   med=80.55ms max=10.1s    p(90)=267.97ms p(95)=331.89ms
+     iterations.....................: 20601   515.032806/s
+     vus............................: 1       min=1        max=150
+     vus_max........................: 150     min=150      max=150

@@ -29,4 +29,15 @@ public class IamExceptionHandler {
         ApiResponse<Void> response = ApiResponse.error("Too Many Requests - Rate limit exceeded. Please try again later.");
         return new ResponseEntity<>(response, HttpStatus.TOO_MANY_REQUESTS);
     }
+
+    /**
+     * Intercepts Spring Security AuthenticationException (e.g., BadCredentialsException).
+     * Returns an HTTP 401 status code with standard ApiResponse content.
+     */
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
+        log.warn("[Authentication] Authentication failed: {}", ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.error("Invalid email or password");
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
 }

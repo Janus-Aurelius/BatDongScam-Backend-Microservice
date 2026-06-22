@@ -6,6 +6,8 @@ spring:
     type: redis
   data:
     redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       time-to-live: 3600000 # 1 hour default expiration to prevent permanent cache leaks
   application:
     name: core-macroservice

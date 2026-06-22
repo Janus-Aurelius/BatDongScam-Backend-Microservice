@@ -76,42 +76,47 @@ export function setup() {
   // USL tests update the same contract status, requiring authentication
   // 1. Authenticate as Sales Agent
   const loginPayload = JSON.stringify({
-    email: 'agent2@bds.com',
+    email: 'agent@bds.com',
     password: 'password123',
     rememberMe: true,
   });
 
+  console.log(`[SETUP] Attempting agent login at ${GATEWAY_URL}/api/auth/login...`);
   const loginRes = http.post(`${GATEWAY_URL}/api/auth/login`, loginPayload, {
     headers: { 'Content-Type': 'application/json' },
   });
+  console.log(`[SETUP] Login response received. Status: ${loginRes.status}`);
 
   if (loginRes.status !== 200) {
-    fail(`[SETUP ERROR] Login failed for agent2@bds.com. Status: ${loginRes.status}, Body: ${loginRes.body}`);
+    fail(`[SETUP ERROR] Login failed for agent@bds.com. Status: ${loginRes.status}, Body: ${loginRes.body}`);
   }
 
-  const agentToken = loginRes.json().data.token;
+  const agentToken = loginRes.json().token;
   console.log('[SETUP] Sales Agent logged in successfully.');
 
   // 2. Fetch a valid property ID from the database to link to our test contract
+  console.log(`[SETUP] Fetching properties from ${GATEWAY_URL}/public/properties/search...`);
   const searchRes = http.get(`${GATEWAY_URL}/public/properties/search?page=0&size=5`);
+  console.log(`[SETUP] Property search response received. Status: ${searchRes.status}`);
   let propertyId = null;
 
   if (searchRes.status === 200) {
     const searchBody = searchRes.json();
-    if (searchBody.data && searchBody.data.content && searchBody.data.content.length > 0) {
-      propertyId = searchBody.data.content[0].propertyId;
+    const content = searchBody.content || (searchBody.data && searchBody.data.content);
+    if (content && content.length > 0) {
+      propertyId = content[0].id || content[0].propertyId;
       console.log(`[SETUP] Found active property to link to contract: ${propertyId}`);
     }
   }
 
   // Fallback if no active properties found
   if (!propertyId) {
-    propertyId = '40000000-0000-0000-0000-000000000001';
+    propertyId = '50000000-0000-0000-0000-000000000001';
     console.log(`[SETUP] Warning: No properties found via search. Using fallback: ${propertyId}`);
   }
 
   // 3. Create a DRAFT contract to run contention operations on
-  const customerId = '30000000-0000-0000-0000-000000000001'; // Default test customer
+  const customerId = 'f0df88b1-3d7b-40f1-bbd5-ccdb7b4fd5d1'; // Default test customer
   const contractPayload = JSON.stringify({
     propertyId: propertyId,
     customerId: customerId,
@@ -121,12 +126,14 @@ export function setup() {
     finalPaymentDeadline: '2026-12-31',
   });
 
+  console.log(`[SETUP] Creating test contract at ${GATEWAY_URL}/contracts/purchases...`);
   const contractRes = http.post(`${GATEWAY_URL}/contracts/purchases`, contractPayload, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${agentToken}`,
     },
   });
+  console.log(`[SETUP] Contract creation response received. Status: ${contractRes.status}`);
 
   if (contractRes.status !== 200) {
     fail(`[SETUP ERROR] Failed to create test purchase contract. Status: ${contractRes.status}, Body: ${contractRes.body}`);

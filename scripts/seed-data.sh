@@ -7,7 +7,7 @@ CORE_DB="batdongsan_db"
 POSTGRES_USER="postgres"
 
 # BCrypt for 'password123'
-BCRYPT_PASS='$2a$10$X/M7i6qD1RzL6r.6N.A8OuQ7e.m8GzM0G0pBq9y/vH7.6N.A8OuQ7e'
+BCRYPT_PASS='$2a$10$h.B58BhvPEtu6aeT.3EFyeySS02DM570PlRyO7r0AD81127fs1Lqa'
 
 echo "============================================="
 echo "🚀 Starting Intelligent Database Seeding"
