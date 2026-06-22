@@ -1,0 +1,27 @@
+
+======================================================================
+               🏆 PRODUCTION-GRADE LOAD TEST METRICS 🏆
+======================================================================
+* Execution Mode: Quick Smoke Test
+* Peak Target Concurrency: 1,000 VUs (70% Search, 20% Draft, 10% Approve)
+* Total Transactions Handled: 1 HTTP requests
+* Average Throughput: 758.40 Req/Sec (RPS)
+* Latency Profiles (Global):
+    - Average: 0.00ms
+    - p(95):   0.00ms
+    - p(99):   0.00ms
+* Overall System Success Rate: 0.00% (Target: > 99%)
+======================================================================
+
+     data_received....................: 0 B     0 B/s
+     data_sent........................: 0 B     0 B/s
+     http_req_blocked.................: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     http_req_connecting..............: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+   ✓ http_req_duration................: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     ✓ { scenario:property_search }...: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+   ✗ http_req_failed..................: 100.00% ✓ 1          ✗ 0
+     http_req_receiving...............: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     http_req_sending.................: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     http_req_tls_handshaking.........: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     http_req_waiting.................: avg=0s min=0s med=0s max=0s p(90)=0s p(95)=0s
+     http_reqs........................: 1       758.403106/s
