@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres:
+    # Scale connection limit on DB and enforce hard resource constraints
+    command: postgres -c shared_buffers=128MB -c max_connections=300
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  core-macroservice:
+    environment:
+      # Inject oversized connection pool to trigger thread context thrashing
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 50
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+

@@ -37,6 +37,24 @@ services:
     networks:
       - bds-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: bds-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bds-network
+
   mongodb:
     image: mongo:6-jammy
     container_name: bds-mongodb
@@ -167,7 +185,7 @@ services:
       EUREKA_URI: ${EUREKA_URI}
       APP_SECRET: ${APP_SECRET}
       JWKS_URI: http://iam-service:8084/api/auth/jwks
-      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.logback-appender.enabled=false -Dotel.instrumentation.logback.enabled=false -Xms128m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1"
+      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.logback-appender.enabled=false -Dotel.instrumentation.logback.enabled=false -Xms256m -Xmx512m"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_RESOURCE_ATTRIBUTES: service.name=api-gateway
@@ -176,8 +194,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
-    entrypoint: ["java", "-jar", "bds-api-gateway-0.0.1-SNAPSHOT.jar"]
+          memory: 768M
+    entrypoint: ["sh", "-c", "cp bds-api-gateway-0.0.1-SNAPSHOT.jar /tmp/app.jar && cd /tmp && java -jar app.jar"]
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -188,7 +206,7 @@ services:
     image: eclipse-temurin:21-jre-jammy
     # container_name: bds-core-macroservice
     ports:
-      - "8090-8092:8081"
+      - "8090-8099:8081"
     volumes:
       - ./:/workspace
       - ./observability/agent/opentelemetry-javaagent.jar:/app/opentelemetry-javaagent.jar
@@ -205,7 +223,9 @@ services:
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       IAM_SERVICE_URL: http://iam-service:8084
-      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.common.default-enabled=false -Djava.net.preferIPv4Stack=true -Xms128m -Xmx320m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1"
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      JAVA_TOOL_OPTIONS: "-javaagent:/app/opentelemetry-javaagent.jar -Dotel.javaagent.enabled=${OTEL_JAVAAGENT_ENABLED:-false} -Dotel.instrumentation.common.default-enabled=false -Djava.net.preferIPv4Stack=true -Xms256m -Xmx512m"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_RESOURCE_ATTRIBUTES: service.name=core-macroservice
@@ -214,14 +234,16 @@ services:
     deploy:
       resources:
         limits:
-          memory: 448M
-    entrypoint: ["sh", "-c", "env && java -jar bds-core-macroservice-0.0.1-SNAPSHOT.jar"]
+          memory: 1024M
+    entrypoint: ["sh", "-c", "cp bds-core-macroservice-0.0.1-SNAPSHOT.jar /tmp/app.jar && cd /tmp && java -jar app.jar"]
     depends_on:
       eureka-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - bds-network

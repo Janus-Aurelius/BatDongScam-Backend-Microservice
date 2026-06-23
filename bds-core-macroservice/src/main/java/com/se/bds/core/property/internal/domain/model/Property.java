@@ -163,6 +163,10 @@ public class Property {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
 
     // Domain logic
     private static final Set<PropertyStatus> TERMINAL_STATUSES =

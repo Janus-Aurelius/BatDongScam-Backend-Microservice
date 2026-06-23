@@ -26,7 +26,7 @@ public class PdfRetryScheduler {
     @Scheduled(fixedDelay = 60000) // Check for failures every 60 seconds
     @SchedulerLock(name = "pdfRetryLock", lockAtMostFor = "55s", lockAtLeastFor = "10s")
     public void retryFailedPdfUploads() {
-        log.debug("[EVENT] Scanning for failed PDF contract uploads to retry...");
+        log.info("[EVENT] Scanning for failed PDF contract uploads to retry...");
         List<RentalContract> failedContracts = rentalContractRepository.findByPdfUrl("PENDING_UPLOAD");
         if (!failedContracts.isEmpty()) {
             log.info("[EVENT] Found {} contracts with PENDING_UPLOAD PDF status. Retrying generations...", failedContracts.size());

@@ -71,12 +71,12 @@ if [ "${PROP_COUNT//[[:space:]]/}" -eq 0 ]; then
   INSERT INTO property_catalog.properties (
     property_id, owner_id, property_type_id, ward_id, title, description, 
     transaction_type, full_address, area, price_amount, commission_rate, 
-    service_fee_amount, service_fee_collected_amount, status, created_at, updated_at
+    service_fee_amount, service_fee_collected_amount, status, version, created_at, updated_at
   ) VALUES (
     '024293fc-eb47-4b9c-832b-bcdb2e5b3156', '2a878977-af51-4b2a-bb96-ddf2eac0dcb7', 
     '40000000-0000-0000-0000-000000000001', '550e8400-e29b-41d4-a716-446655440000',
     'Seeded Villa', 'Automatically seeded for testing', 'SALE', '123 Seed St', 
-    500, 1000000, 0.05, 500, 0, 'PENDING', NOW(), NOW()
+    500, 1000000, 0.05, 500, 0, 'PENDING', 0, NOW(), NOW()
   );
 EOF
 else

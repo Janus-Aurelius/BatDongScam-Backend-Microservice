@@ -122,6 +122,10 @@ public abstract class Contract {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
 
     //Domain logic
     private static final Set<ContractStatus> TERMINAL_STATUSES = EnumSet.of(ContractStatus.COMPLETED, ContractStatus.CANCELLED);
@@ -164,7 +168,13 @@ public abstract class Contract {
     }
 
     private void validateTransition(ContractStatus oldStatus, ContractStatus newStatus) {
+        if (oldStatus == newStatus) {
+            throw new BusinessException("CONCURRENCY_CONFLICT", "Contract is already in " + newStatus + " status.");
+        }
+
+        boolean valid = false;
         if (oldStatus == ContractStatus.DRAFT && newStatus == ContractStatus.WAITING_OFFICIAL) {
+            valid = true;
             if (this.propertyId == null) {
                 throw new BusinessException(MSG12.CODE, "Property ID must not be null");
             }
@@ -190,12 +200,14 @@ public abstract class Contract {
         }
 
         if (oldStatus == ContractStatus.WAITING_OFFICIAL && newStatus == ContractStatus.PENDING_PAYMENT) {
+            valid = true;
             if (this.contractNumber == null || this.contractNumber.trim().isEmpty()) {
                 throw new BusinessException(MSG12.CODE, "Signed paperwork must exist before moving to PENDING_PAYMENT");
             }
         }
 
         if (oldStatus == ContractStatus.PENDING_PAYMENT && newStatus == ContractStatus.ACTIVE) {
+            valid = true;
             boolean hasSuccessPayment = false;
             if (this.payments != null) {
                 for (Payment p : this.payments) {
@@ -208,6 +220,14 @@ public abstract class Contract {
             if (!hasSuccessPayment) {
                 throw new BusinessException(MSG12.CODE, "At least first payment must be marked SUCCESS to activate the contract");
             }
+        }
+
+        if (newStatus == ContractStatus.CANCELLED) {
+            valid = true;
+        }
+
+        if (!valid) {
+            throw new BusinessException(MSG12.CODE, "Invalid transition from " + oldStatus + " to " + newStatus);
         }
     }
 

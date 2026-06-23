@@ -1,0 +1,23 @@
+     ✓ CALM: Status is 200 or 409
+     ✓ CALM: Status is not 500
+
+     checks.........................: 100.00% ✓ 100      ✗ 0   
+     data_received..................: 55 kB   8.5 kB/s
+     data_sent......................: 39 kB   6.0 kB/s
+     http_req_blocked...............: avg=4.31ms   min=19.62µs  med=1.85ms   max=29.66ms  p(90)=12.36ms  p(95)=16.25ms 
+     http_req_connecting............: avg=2.79ms   min=0s       med=857.7µs  max=29.43ms  p(90)=8.99ms   p(95)=13.11ms 
+     http_req_duration..............: avg=1.19s    min=426.32ms med=1.11s    max=2.25s    p(90)=1.74s    p(95)=1.83s   
+       { expected_response:true }...: avg=972.74ms min=426.32ms med=1.02s    max=1.41s    p(90)=1.3s     p(95)=1.36s   
+     http_req_failed................: 92.45%  ✓ 49       ✗ 4   
+     http_req_receiving.............: avg=48.34ms  min=95.67µs  med=31.87ms  max=181.14ms p(90)=136.32ms p(95)=164.87ms
+     http_req_sending...............: avg=3.75ms   min=122.49µs med=383.43µs max=93.44ms  p(90)=2.42ms   p(95)=14.24ms 
+     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s       p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=1.13s    min=386.37ms med=1.05s    max=2.16s    p(90)=1.66s    p(95)=1.81s   
+     http_reqs......................: 53      8.131163/s
+     iteration_duration.............: avg=2.74s    min=1.13s    med=2.8s     max=4.01s    p(90)=3.83s    p(95)=3.95s   
+     iterations.....................: 50      7.670909/s
+   ✓ status_200.....................: 1       0.153418/s
+   ✓ status_409.....................: 49      7.517491/s
+   ✓ status_500.....................: 0       0/s
+     vus............................: 15      min=0      max=50
+     vus_max........................: 50      min=50     max=50
