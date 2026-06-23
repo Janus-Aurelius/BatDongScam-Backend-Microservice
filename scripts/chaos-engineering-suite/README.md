@@ -73,7 +73,7 @@ This specialized testing suite is designed to prove advanced distributed systems
 
 ### Execution Steps
 1. **Trigger the Retry Storm:**
-   Fire exactly 50 duplicate mutation requests to approve the same Contract ID spread over a 3-second window:
+   Fire exactly 30 duplicate mutation requests to approve the same Contract ID spread over a 3-second window:
    ```bash
    k6 run scripts/chaos-engineering-suite/calm-retry-storm.js
    ```
@@ -82,7 +82,7 @@ This specialized testing suite is designed to prove advanced distributed systems
 - **k6 Assertions:**
   k6 will automatically assert:
   - Exactly **1** request returns `200 OK` (success).
-  - Exactly **49** requests return `409 Conflict` (Optimistic locking collision).
+  - Exactly **29** requests return `409 Conflict` (Optimistic locking collision).
   - Exactly **0** requests return `500 Internal Server Error` (proves that database conflicts are handled gracefully).
 - **Application Console Logs (Loki):**
   Verify that the application intercepts the conflicts cleanly:

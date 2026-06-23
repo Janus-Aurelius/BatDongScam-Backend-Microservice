@@ -7,8 +7,8 @@ set -euo pipefail
 POSTGRES_CONTAINER="bds-postgres"
 NOISY_NEIGHBOR_CPUS="0.3"
 ORIGINAL_CPUS="1.0"
-DELAY_INJECT=30
-TEST_DURATION=120
+DELAY_INJECT=60
+TEST_DURATION=300
 
 echo "==== [USL CHAOS INITIALIZED] ===="
 echo "Monitoring traffic baseline... Waiting ${DELAY_INJECT} seconds before injection."

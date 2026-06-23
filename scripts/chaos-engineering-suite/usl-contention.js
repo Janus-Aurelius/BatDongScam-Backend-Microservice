@@ -15,11 +15,11 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 10,
       stages: [
-        { duration: '30s', target: 100 }, // Initial ramp-up
-        { duration: '60s', target: 500 }, // Aggressive spike to trigger pool thrashing
-        { duration: '30s', target: 0   }, // Cool down
+        { duration: '60s', target: 100 },  // Initial ramp-up
+        { duration: '180s', target: 500 }, // Aggressive spike to trigger pool thrashing
+        { duration: '60s', target: 0   },   // Cool down
       ],
-      gracefulRampDown: '10s',
+      gracefulRampDown: '15s',
     },
   },
   thresholds: {

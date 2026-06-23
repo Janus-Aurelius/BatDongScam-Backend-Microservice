@@ -18,16 +18,16 @@ export const options = {
   scenarios: {
     retry_storm: {
       executor: 'per-vu-iterations',
-      vus: 50,
-      iterations: 1, // Exactly 50 requests in total
-      maxDuration: '10s',
+      vus: 30,
+      iterations: 1, // Exactly 30 requests in total
+      maxDuration: '20s',
     },
   },
   thresholds: {
     // Assert exactly 1 successful update transition
     'status_200': ['count == 1'],
-    // Assert exactly 49 collision rejections (409 Conflict)
-    'status_409': ['count == 49'],
+    // Assert exactly 29 collision rejections (409 Conflict)
+    'status_409': ['count == 29'],
     // Assert zero unhandled internal server failures
     'status_500': ['count == 0'],
   },

@@ -15,7 +15,7 @@ export const options = {
     pacelc_scenario: {
       executor: 'constant-vus',
       vus: 10,
-      duration: '60s',
+      duration: '180s',
     },
   },
   thresholds: {
