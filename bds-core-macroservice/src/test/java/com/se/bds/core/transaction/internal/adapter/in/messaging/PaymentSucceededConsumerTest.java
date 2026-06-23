@@ -32,7 +32,7 @@ class PaymentSucceededConsumerTest {
     }
 
     @Test
-    void consumePaymentSucceeded_DelegatesToUseCase() {
+    void consumePaymentSucceeded_DelegatesToUseCase() throws Exception {
         UUID paymentId = UUID.randomUUID();
         UUID contractId = UUID.randomUUID();
         UUID propertyId = UUID.randomUUID();

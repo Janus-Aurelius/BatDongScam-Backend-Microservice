@@ -12,4 +12,5 @@ public interface IndividualCustomerPotentialAllRepository
         extends MongoRepository<IndividualCustomerPotentialAll, String> {
 
     Optional<IndividualCustomerPotentialAll> findByCustomerId(UUID customerId);
+    java.util.List<IndividualCustomerPotentialAll> findAllByCustomerIdIn(java.util.List<UUID> customerIds);
 }

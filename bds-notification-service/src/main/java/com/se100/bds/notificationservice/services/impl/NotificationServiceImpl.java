@@ -36,7 +36,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Qualifier("firebasePushService")
     private FirebasePushService firebasePushService;
 
-    @Async
     @Override
     public void createNotification(
             UUID recipientId,
@@ -96,6 +95,21 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
         log.debug("Created notification '{}' for recipient {}", title, recipientId);
+    }
+
+    @Async("notificationTaskExecutor")
+    @Override
+    public void createNotificationAsync(
+            UUID recipientId,
+            String fcmToken,
+            NotificationTypeEnum type,
+            String title,
+            String message,
+            RelatedEntityTypeEnum relatedEntityType,
+            String relatedEntityId,
+            String imgUrl
+    ) {
+        createNotification(recipientId, fcmToken, type, title, message, relatedEntityType, relatedEntityId, imgUrl);
     }
 
     @Override

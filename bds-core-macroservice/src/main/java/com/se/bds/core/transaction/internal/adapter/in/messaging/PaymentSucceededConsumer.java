@@ -18,18 +18,14 @@ public class PaymentSucceededConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "payment-succeeded", groupId = "core-macroservice-payment")
-    public void consumePaymentSucceeded(@Payload String payload) {
+    public void consumePaymentSucceeded(@Payload String payload) throws Exception {
         log.info("[KAFKA] Received payment-succeeded event, payload={}", payload);
-        try {
-            PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
-            boolean result = paymentWebhookUseCase.processPaymentCompleted(event);
-            if (result) {
-                log.info("[KAFKA] Payment-succeeded event processed successfully");
-            } else {
-                log.warn("[KAFKA] Payment-succeeded event processing failed");
-            }
-        } catch (Exception e) {
-            log.error("[KAFKA] Failed to deserialize or process PaymentCompletedEvent", e);
+        // Bubble deserialization or business execution exceptions up to trigger the Kafka CommonErrorHandler
+        PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
+        boolean result = paymentWebhookUseCase.processPaymentCompleted(event);
+        if (!result) {
+            throw new RuntimeException("Business execution failed for payment-completed event");
         }
+        log.info("[KAFKA] Payment-succeeded event processed successfully");
     }
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 public interface WardRepository {
     Ward save(Ward ward);
     Optional<Ward> findById(UUID id);
+    List<Ward> findAllById(List<UUID> ids);
     List<Ward> findAllByDistrictId(UUID districtId);
     void delete(Ward ward);
 }

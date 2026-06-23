@@ -12,5 +12,6 @@ public interface IndividualSalesAgentPerformanceMonthRepository
         extends MongoRepository<IndividualSalesAgentPerformanceMonth, String> {
 
     Optional<IndividualSalesAgentPerformanceMonth> findByAgentIdAndMonthAndYear(UUID agentId, Integer month, Integer year);
+    java.util.List<IndividualSalesAgentPerformanceMonth> findAllByAgentIdInAndMonthAndYear(java.util.List<UUID> agentIds, Integer month, Integer year);
     Long countByAgentId(UUID agentId);
 }

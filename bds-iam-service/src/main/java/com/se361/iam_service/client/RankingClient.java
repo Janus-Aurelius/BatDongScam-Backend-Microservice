@@ -54,4 +54,40 @@ public interface RankingClient {
     ApiResponse<IndividualPropertyOwnerContributionAll> getPropertyOwnerAll(
             @PathVariable("propertyOwnerId") UUID propertyOwnerId
     );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/agents/month")
+    ApiResponse<java.util.Map<UUID, IndividualSalesAgentPerformanceMonth>> getSaleAgentsMonthBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> agentIds,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year
+    );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/agents/career")
+    ApiResponse<java.util.Map<UUID, IndividualSalesAgentPerformanceCareer>> getSaleAgentsCareerBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> agentIds
+    );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/customers/month")
+    ApiResponse<java.util.Map<UUID, IndividualCustomerPotentialMonth>> getCustomersMonthBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> customerIds,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year
+    );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/customers/all")
+    ApiResponse<java.util.Map<UUID, IndividualCustomerPotentialAll>> getCustomersAllBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> customerIds
+    );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/property-owners/month")
+    ApiResponse<java.util.Map<UUID, IndividualPropertyOwnerContributionMonth>> getPropertyOwnersMonthBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> ownerIds,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year
+    );
+
+    @org.springframework.web.bind.annotation.PostMapping("/batch/property-owners/all")
+    ApiResponse<java.util.Map<UUID, IndividualPropertyOwnerContributionAll>> getPropertyOwnersAllBatch(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<UUID> ownerIds
+    );
 }

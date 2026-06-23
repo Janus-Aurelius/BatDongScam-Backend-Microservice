@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -67,6 +68,7 @@ public class ReportExportService implements ReportExportUseCase {
     }
 
     @Async("reportExportExecutor")
+    @Bulkhead(name = "reportExportBulkhead")
     public void generateReportAsync(LocalDate startDate, LocalDate endDate, String format) {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);

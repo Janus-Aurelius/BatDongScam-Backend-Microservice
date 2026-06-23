@@ -27,11 +27,13 @@ public class UserValidationAdapter implements UserValidationPort {
     private String iamServiceUrl;
 
     @Override
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "iamUserValidation", fallbackMethod = "fallbackValidateCustomer")
     public void validateCustomer(UUID customerId) {
         validateUser(customerId, "CUSTOMER");
     }
 
     @Override
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "iamUserValidation", fallbackMethod = "fallbackValidateAgent")
     public void validateAgent(UUID agentId) {
         validateUser(agentId, "SALESAGENT");
     }
@@ -46,33 +48,34 @@ public class UserValidationAdapter implements UserValidationPort {
                 "role", role
         );
 
-        try {
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class, uriVariables);
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Boolean active = (Boolean) response.getBody().get("active");
-                if (active == null || !active) {
-                    throw new BusinessException(MSG12.CODE, "User is not active or role does not match");
-                }
-            } else {
-                throw new BusinessException(MSG12.CODE, "User validation failed with status " + response.getStatusCode());
+        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class, uriVariables);
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            Boolean active = (Boolean) response.getBody().get("active");
+            if (active == null || !active) {
+                throw new BusinessException(MSG12.CODE, "User is not active or role does not match");
             }
-        } catch (BusinessException e) {
-            throw e;
-        } catch (ResourceAccessException e) {
-            log.error("IAM service is unavailable during user validation (userId={}, role={}). Connection error: {}", 
-                    userId, role, e.getMessage());
-            throw new BusinessException(MSG12.CODE, "Identity validation service is currently unavailable.");
-        } catch (RestClientResponseException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND || e.getStatusCode() == HttpStatus.BAD_REQUEST || e.getStatusCode() == HttpStatus.FORBIDDEN) {
-                throw new BusinessException(MSG12.CODE, "User validation failed: " + e.getResponseBodyAsString());
-            }
-            log.error("IAM service returned a server error (userId={}, role={}). Response: {}", 
-                    userId, role, e.getResponseBodyAsString());
-            throw new BusinessException(MSG12.CODE, "Identity validation service returned an internal server error.");
-        } catch (Exception e) {
-            log.error("Unexpected exception during user validation (userId={}, role={}).", 
-                    userId, role, e);
-            throw new BusinessException(MSG12.CODE, "An unexpected error occurred during identity validation.");
+        } else {
+            throw new BusinessException(MSG12.CODE, "User validation failed with status " + response.getStatusCode());
         }
+    }
+
+    // Fallback method for customer validation
+    private void fallbackValidateCustomer(UUID customerId, Throwable throwable) {
+        if (throwable instanceof BusinessException) {
+            throw (BusinessException) throwable;
+        }
+        log.error("Resilience fallback triggered for customer validation (customerId={}). Reason: {}", 
+                customerId, throwable.getMessage());
+        throw new BusinessException(MSG12.CODE, "Identity validation service is currently unavailable. Please try again later.");
+    }
+
+    // Fallback method for agent validation
+    private void fallbackValidateAgent(UUID agentId, Throwable throwable) {
+        if (throwable instanceof BusinessException) {
+            throw (BusinessException) throwable;
+        }
+        log.error("Resilience fallback triggered for agent validation (agentId={}). Reason: {}", 
+                agentId, throwable.getMessage());
+        throw new BusinessException(MSG12.CODE, "Identity validation service is currently unavailable. Please try again later.");
     }
 }

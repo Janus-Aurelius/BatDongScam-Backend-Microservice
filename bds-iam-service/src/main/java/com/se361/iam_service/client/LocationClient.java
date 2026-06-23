@@ -21,6 +21,9 @@ public interface LocationClient {
     @GetMapping("/public/locations/districts/{districtId}/wards")
     List<WardDto> getWardsByDistrictId(@PathVariable("districtId") UUID districtId);
 
+    @org.springframework.web.bind.annotation.PostMapping("/api/internal/locations/wards/names")
+    java.util.Map<UUID, String> resolveWardNames(@org.springframework.web.bind.annotation.RequestBody List<UUID> wardIds);
+
     @Getter
     @Setter
     class CityDto {

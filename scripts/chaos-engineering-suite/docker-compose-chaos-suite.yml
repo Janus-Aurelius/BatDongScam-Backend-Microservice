@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.5.0
+    container_name: bds-toxiproxy
+    ports:
+      - "8474:8474"   # API management port
+      - "26379:26379" # Redis proxy port
+    networks:
+      - bds-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  core-macroservice:
+    environment:
+      # Reroute Redis connections to go through Toxiproxy
+      REDIS_HOST: toxiproxy
+      REDIS_PORT: 26379
+    depends_on:
+      toxiproxy:
+        condition: service_started
+
+  api-gateway:
+    environment:
+      # Reroute Redis rate limiter connections to go through Toxiproxy
+      REDIS_HOST: toxiproxy
+      REDIS_PORT: 26379
+    depends_on:
+      toxiproxy:
+        condition: service_started

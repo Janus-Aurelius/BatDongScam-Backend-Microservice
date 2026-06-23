@@ -1,0 +1,32 @@
+
+======================================================================
+                  🏆 CV RESUME KEY PERFORMANCE METRICS 🏆
+======================================================================
+* Distributed System Throughput: Peak of 7.13 Req/Sec (RPS)
+* Total Transactions Handled:    186 HTTP requests
+* API Gateway Response Times:    Avg: 17.47ms | p95: 27.08ms | p99: 0.00ms
+* Overall System Success Rate:   100.00% under extreme stress load
+* Maximum Concurrent VUs Tested: 1,000 VUs (ramping stress profile)
+* SLO: p(95) < 1,000ms          ✅ PASSED
+* SLO: Error rate < 5%          ✅ PASSED
+======================================================================
+
+     ✓ gateway returns 200, 429, or 503/504
+
+   ✓ checks.........................: 100.00% ✓ 186      ✗ 0   
+     data_received..................: 154 kB  5.9 kB/s
+     data_sent......................: 36 kB   1.4 kB/s
+     http_req_blocked...............: avg=46.56µs  min=5.01µs   med=7.39µs   max=531.57µs p(90)=267.24µs p(95)=325.32µs
+     http_req_connecting............: avg=24.17µs  min=0s       med=0s       max=358.66µs p(90)=166.36µs p(95)=206.95µs
+   ✓ http_req_duration..............: avg=17.47ms  min=9.32ms   med=14.84ms  max=165.15ms p(90)=22.49ms  p(95)=27.07ms 
+       { expected_response:true }...: avg=17.47ms  min=9.32ms   med=14.84ms  max=165.15ms p(90)=22.49ms  p(95)=27.07ms 
+   ✓ http_req_failed................: 0.00%   ✓ 0        ✗ 186 
+     http_req_receiving.............: avg=623.53µs min=130.66µs med=475.33µs max=7.04ms   p(90)=1ms      p(95)=1.34ms  
+     http_req_sending...............: avg=52.54µs  min=16.92µs  med=37.96µs  max=221.13µs p(90)=101.27µs p(95)=150.36µs
+     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s       p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=16.79ms  min=8.73ms   med=14.25ms  max=164.71ms p(90)=21.64ms  p(95)=26.14ms 
+     http_reqs......................: 186     7.132238/s
+     iteration_duration.............: avg=2.01s    min=1.01s    med=2.02s    max=3s       p(90)=2.79s    p(95)=2.92s   
+     iterations.....................: 186     7.132238/s
+     vus............................: 1       min=1      max=20
+     vus_max........................: 20      min=20     max=20

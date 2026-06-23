@@ -47,7 +47,7 @@ public class SearchController {
     @Operation(summary = "Add search log entries in batch (async)")
     public ResponseEntity<ApiResponse<Void>> addSearchList(@RequestBody AddSearchListRequest request) {
         log.info("Adding batch search log for user: {}", request.getUserId());
-        searchService.addSearchList(
+        searchService.addSearchListAsync(
                 request.getUserId(),
                 request.getCityIds(),
                 request.getDistrictIds(),

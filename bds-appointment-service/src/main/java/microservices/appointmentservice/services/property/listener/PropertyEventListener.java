@@ -55,6 +55,7 @@ public class PropertyEventListener {
             log.info("[KAFKA] Synchronized created property ID={}", event.propertyId());
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-created event", e);
+            throw new RuntimeException("Failed to process property-created event", e);
         }
     }
 
@@ -81,6 +82,7 @@ public class PropertyEventListener {
             log.info("[KAFKA] Synchronized updated property ID={}", event.propertyId());
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-updated event", e);
+            throw new RuntimeException("Failed to process property-updated event", e);
         }
     }
 
@@ -88,15 +90,15 @@ public class PropertyEventListener {
     public void onPropertyDeleted(String message) {
         log.info("[KAFKA] Received property-deleted event");
         try {
-            Map<String, Object> eventMap = objectMapper.readValue(message, Map.class);
-            UUID propertyId = UUID.fromString(eventMap.get("propertyId").toString());
-            propertyRepository.findById(propertyId).ifPresent(property -> {
+            PropertyDeletedEvent event = objectMapper.readValue(message, PropertyDeletedEvent.class);
+            propertyRepository.findById(event.propertyId()).ifPresent(property -> {
                 property.setStatus(Constants.PropertyStatusEnum.DELETED);
                 propertyRepository.save(property);
                 log.info("[KAFKA] Marked property ID={} as DELETED locally", event.propertyId());
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-deleted event", e);
+            throw new RuntimeException("Failed to process property-deleted event", e);
         }
     }
 
@@ -112,6 +114,7 @@ public class PropertyEventListener {
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-status-changed event", e);
+            throw new RuntimeException("Failed to process property-status-changed event", e);
         }
     }
 
@@ -129,6 +132,7 @@ public class PropertyEventListener {
             });
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process property-agent-assigned event", e);
+            throw new RuntimeException("Failed to process property-agent-assigned event", e);
         }
     }
 
@@ -148,6 +152,12 @@ public class PropertyEventListener {
         if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
         if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
         if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.serviceFeeCollectedAmount() != null) property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
+        if (event.propertyTypeId() != null) {
+            PropertyType pt = new PropertyType();
+            pt.setId(event.propertyTypeId());
+            property.setPropertyType(pt);
+        }
         if (event.ownerId() != null) property.setOwnerId(event.ownerId());
         if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
         if (event.wardId() != null) property.setWardId(event.wardId());
@@ -179,6 +189,12 @@ public class PropertyEventListener {
         if (event.pricePerSquareMeter() != null) property.setPricePerSquareMeter(event.pricePerSquareMeter());
         if (event.commissionRate() != null) property.setCommissionRate(event.commissionRate());
         if (event.serviceFeeAmount() != null) property.setServiceFeeAmount(event.serviceFeeAmount());
+        if (event.serviceFeeCollectedAmount() != null) property.setServiceFeeCollectedAmount(event.serviceFeeCollectedAmount());
+        if (event.propertyTypeId() != null) {
+            PropertyType pt = new PropertyType();
+            pt.setId(event.propertyTypeId());
+            property.setPropertyType(pt);
+        }
         if (event.ownerId() != null) property.setOwnerId(event.ownerId());
         if (event.assignedAgentId() != null) property.setAssignedAgentId(event.assignedAgentId());
         if (event.wardId() != null) property.setWardId(event.wardId());

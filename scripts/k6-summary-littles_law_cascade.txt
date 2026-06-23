@@ -1,0 +1,19 @@
+     ✓ gateway returns 200, 429, or 503/504
+
+   ✓ checks.........................: 100.00% ✓ 599      ✗ 0   
+     data_received..................: 497 kB  7.9 kB/s
+     data_sent......................: 120 kB  1.9 kB/s
+     http_req_blocked...............: avg=20.23µs min=4.58µs   med=6.62µs   max=1.22ms   p(90)=12.33µs p(95)=23.75µs
+     http_req_connecting............: avg=6.18µs  min=0s       med=0s       max=789.08µs p(90)=0s      p(95)=0s     
+   ✓ http_req_duration..............: avg=33.54ms min=10.71ms  med=17.09ms  max=490.5ms  p(90)=30.47ms p(95)=52.93ms
+       { expected_response:true }...: avg=33.54ms min=10.71ms  med=17.09ms  max=490.5ms  p(90)=30.47ms p(95)=52.93ms
+   ✓ http_req_failed................: 0.00%   ✓ 0        ✗ 599 
+     http_req_receiving.............: avg=1.3ms   min=168.96µs med=608.11µs max=62.29ms  p(90)=1.45ms  p(95)=2.22ms 
+     http_req_sending...............: avg=42.39µs min=12.02µs  med=33.9µs   max=1.02ms   p(90)=71.33µs p(95)=88.46µs
+     http_req_tls_handshaking.......: avg=0s      min=0s       med=0s       max=0s       p(90)=0s      p(95)=0s     
+     http_req_waiting...............: avg=32.19ms min=10.26ms  med=16.5ms   max=489.38ms p(90)=28.26ms p(95)=50.37ms
+     http_reqs......................: 599     9.540763/s
+     iteration_duration.............: avg=2.03s   min=1.01s    med=2.06s    max=3.18s    p(90)=2.86s   p(95)=2.93s  
+     iterations.....................: 599     9.540763/s
+     vus............................: 2       min=2      max=20
+     vus_max........................: 20      min=20     max=20

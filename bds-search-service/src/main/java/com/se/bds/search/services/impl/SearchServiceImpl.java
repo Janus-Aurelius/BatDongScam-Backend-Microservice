@@ -38,7 +38,6 @@ public class SearchServiceImpl implements SearchService {
         incrementSearchStats(Instant.now(), cityId, districtId, wardId, propertyTypeId, propertyId);
     }
 
-    @Async
     @Override
     public void addSearchList(UUID userId, List<UUID> cityIds, List<UUID> districtIds, List<UUID> wardIds, List<UUID> propertyTypeIds) {
         try {
@@ -54,6 +53,12 @@ public class SearchServiceImpl implements SearchService {
         } catch (Exception e) {
             log.error("Error saving search log asynchronously: {}", e.getMessage());
         }
+    }
+
+    @Async("searchTaskExecutor")
+    @Override
+    public void addSearchListAsync(UUID userId, List<UUID> cityIds, List<UUID> districtIds, List<UUID> wardIds, List<UUID> propertyTypeIds) {
+        addSearchList(userId, cityIds, districtIds, wardIds, propertyTypeIds);
     }
 
     @Override

@@ -24,6 +24,11 @@ public class WardRepositoryAdapter implements WardRepository {
     }
 
     @Override
+    public List<Ward> findAllById(List<UUID> ids) {
+        return jpaWardRepository.findAllById(ids);
+    }
+
+    @Override
     public List<Ward> findAllByDistrictId(UUID districtId) {
         return jpaWardRepository.findAllByDistrictId(districtId);
     }

@@ -96,6 +96,23 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // Real Token validation (Reactive)
         return parseClaims(token)
+                .onErrorResume(e -> {
+                    log.error("JWT validation failed: {}", e.getMessage());
+                    HttpStatus status = HttpStatus.UNAUTHORIZED;
+                    String msg = "Invalid token";
+                    if (e instanceof ExpiredJwtException) {
+                        msg = "Token expired";
+                    } else if (e instanceof SignatureException) {
+                        msg = "Invalid JWT signature";
+                    } else if (e instanceof MalformedJwtException) {
+                        msg = "Malformed JWT token";
+                    } else if (e instanceof UnsupportedJwtException) {
+                        msg = "Unsupported JWT token";
+                    } else if (e instanceof IllegalArgumentException) {
+                        msg = "JWT claims string is empty";
+                    }
+                    return Mono.error(new JwtValidationException(msg, status));
+                })
                 .flatMap(claims -> {
                     String userId = claims.getSubject();
                     String roles = claims.get("roles", String.class);
@@ -112,23 +129,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                     return chain.filter(exchange.mutate().request(modifiedRequest).build());
                 })
-                .onErrorResume(e -> {
-                    log.error("JWT validation failed: {}", e.getMessage());
-                    HttpStatus status = HttpStatus.UNAUTHORIZED;
-                    String msg = "Invalid token";
-                    if (e instanceof ExpiredJwtException) {
-                        msg = "Token expired";
-                    } else if (e instanceof SignatureException) {
-                        msg = "Invalid JWT signature";
-                    } else if (e instanceof MalformedJwtException) {
-                        msg = "Malformed JWT token";
-                    } else if (e instanceof UnsupportedJwtException) {
-                        msg = "Unsupported JWT token";
-                    } else if (e instanceof IllegalArgumentException) {
-                        msg = "JWT claims string is empty";
-                    }
-                    return onError(exchange, msg, status);
-                });
+                .onErrorResume(JwtValidationException.class, e -> onError(exchange, e.getMessage(), e.getStatus()));
+    }
+
+    private static class JwtValidationException extends RuntimeException {
+        private final HttpStatus status;
+        public JwtValidationException(String message, HttpStatus status) {
+            super(message);
+            this.status = status;
+        }
+        public HttpStatus getStatus() { return status; }
     }
 
     @Override
@@ -193,8 +203,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(this::extractPublicKeyFromJwks)
-                .timeout(java.time.Duration.ofSeconds(5))
-                .onErrorMap(e -> new RuntimeException("Failed to fetch JWKS: " + e.getMessage(), e));
+                .timeout(java.time.Duration.ofSeconds(3))
+                .onErrorResume(e -> {
+                    if (cachedPublicKey != null) {
+                        log.warn("Failed to fetch fresh JWKS. Falling back to cached public key. Error: {}", e.getMessage());
+                        return Mono.just(cachedPublicKey);
+                    }
+                    return Mono.error(new RuntimeException("Failed to fetch initial JWKS and no cached key is available: " + e.getMessage(), e));
+                });
     }
 
     @SuppressWarnings("unchecked")

@@ -24,6 +24,14 @@ public interface RankingService {
     IndividualCustomerPotentialAll getCustomerAll(UUID customerId);
     IndividualPropertyOwnerContributionMonth getPropertyOwnerMonth(UUID propertyOwnerId, int month, int year);
     IndividualPropertyOwnerContributionAll getPropertyOwnerAll(UUID propertyOwnerId);
+
+    java.util.Map<UUID, IndividualSalesAgentPerformanceMonth> getSaleAgentsMonthBatch(java.util.List<UUID> agentIds, int month, int year);
+    java.util.Map<UUID, IndividualSalesAgentPerformanceCareer> getSaleAgentsCareerBatch(java.util.List<UUID> agentIds);
+    java.util.Map<UUID, IndividualCustomerPotentialMonth> getCustomersMonthBatch(java.util.List<UUID> customerIds, int month, int year);
+    java.util.Map<UUID, IndividualCustomerPotentialAll> getCustomersAllBatch(java.util.List<UUID> customerIds);
+    java.util.Map<UUID, IndividualPropertyOwnerContributionMonth> getPropertyOwnersMonthBatch(java.util.List<UUID> ownerIds, int month, int year);
+    java.util.Map<UUID, IndividualPropertyOwnerContributionAll> getPropertyOwnersAllBatch(java.util.List<UUID> ownerIds);
+
     IndividualSalesAgentPerformanceMonth getMySaleAgentMonth(int month, int year);
     IndividualSalesAgentPerformanceCareer getMySaleAgentCareer();
     IndividualCustomerPotentialMonth getMyCustomerMonth(int month, int year);

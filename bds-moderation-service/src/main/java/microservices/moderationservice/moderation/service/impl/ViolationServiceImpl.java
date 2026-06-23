@@ -1,7 +1,6 @@
 package microservices.moderationservice.moderation.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.se.bds.common.dto.PagedData;
 import com.se.bds.common.enums.*;
 import com.se.bds.common.exception.BusinessException;
 import com.se.bds.common.event.ViolationPenaltyAppliedEvent;
@@ -20,8 +19,6 @@ import microservices.moderationservice.moderation.repository.PropertyReplicaRepo
 import microservices.moderationservice.moderation.repository.UserReplicaRepository;
 import microservices.moderationservice.moderation.repository.ViolationRepository;
 import microservices.moderationservice.moderation.repository.mongo.ViolationReportDetailsRepository;
-import microservices.moderationservice.moderation.repository.replica.PropertyReplicaRepository;
-import microservices.moderationservice.moderation.repository.replica.UserReplicaRepository;
 import microservices.moderationservice.moderation.scheduler.ViolationReportScheduler;
 import microservices.moderationservice.moderation.schema.ViolationReportDetails;
 import microservices.moderationservice.moderation.service.ViolationService;
@@ -30,12 +27,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -66,8 +63,7 @@ public class ViolationServiceImpl implements ViolationService {
     private final ViolationReportDetailsRepository violationReportDetailsRepository;
     private final ViolationReportScheduler violationReportScheduler;
     private final ObjectMapper objectMapper;
-    private final OutboxEventRepository outboxEventRepository;
-    private final PropertyReplicaRepository propertyReplicaRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -106,7 +102,6 @@ public class ViolationServiceImpl implements ViolationService {
                 cb.equal(root.get("reporterId"), currentUserId);
 
         Page<ViolationReport> violations = violationRepository.findAll(spec, pageable);
-        ReplicaLookup replicaLookup = loadReplicaLookup(violations.getContent());
         List<ViolationUserItem> items = violations.getContent().stream()
                 .map(v -> {
                     ViolationUserItem item = violationMapper.toUserItem(v);
@@ -276,13 +271,6 @@ public class ViolationServiceImpl implements ViolationService {
 
     // ======================== HELPERS ========================
 
-    /**
-     * THAY validateReportedEntity cũ: dùng local replica thay vì Feign.
-     *
-     * Trade-off được chấp nhận: nếu replica chưa sync kịp, validation có thể
-     * chấp nhận một entity vừa bị xóa. Đây là eventual consistency chủ ý.
-     * Nếu cần strict validation, giữ lại Feign chỉ cho method này.
-     */
     private void validateReportedEntityFromReplica(UUID reportedId, ViolationReportedTypeEnum reportedType) {
         if (reportedType == ViolationReportedTypeEnum.PROPERTY) {
             boolean exists = propertyReplicaRepository.findByPropertyIdAndDeletedFalse(reportedId).isPresent();
@@ -299,10 +287,6 @@ public class ViolationServiceImpl implements ViolationService {
         }
     }
 
-    /**
-     * THAY enrichReporterInfo cũ: query UserReplica thay vì iamServiceClient.getUserDetails().
-     * Không có network call, không có latency, không có điểm lỗi ngoài local DB.
-     */
     private void enrichReporterInfo(UUID reporterId, ViolationAdminItem item) {
         if (reporterId == null) return;
         userReplicaRepository.findById(reporterId).ifPresentOrElse(
@@ -443,21 +427,14 @@ public class ViolationServiceImpl implements ViolationService {
         }
     }
 
-    /**
-     * THAY publishPenaltyAppliedEvent cũ: lấy ownerId từ PropertyReplica thay vì Feign.
-     */
     private void publishPenaltyAppliedEvent(ViolationReport violation) {
         try {
             UUID reportedUserId = null;
             if (violation.getRelatedEntityType() == ViolationReportedTypeEnum.PROPERTY) {
-                // Lấy ownerId từ local replica - KHÔNG gọi CoreServiceClient
                 reportedUserId = propertyReplicaRepository
                         .findById(violation.getRelatedEntityId())
                         .map(PropertyReplica::getOwnerId)
                         .orElse(null);
-                if (reportedUserId == null) {
-                    log.warn("Cannot find ownerId for property {} in local replica", violation.getRelatedEntityId());
-                }
             } else {
                 reportedUserId = violation.getRelatedEntityId();
             }

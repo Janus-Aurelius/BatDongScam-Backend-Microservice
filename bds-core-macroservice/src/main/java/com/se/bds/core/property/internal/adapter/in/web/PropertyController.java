@@ -5,6 +5,8 @@ import com.se.bds.core.property.internal.adapter.in.web.mapper.PropertyWebMapper
 import com.se.bds.core.property.internal.application.command.*;
 import com.se.bds.core.property.internal.application.port.in.PropertyUseCase;
 import com.se.bds.core.property.internal.domain.model.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Core - Properties", description = "Endpoints for property management, search, and metadata")
 public class PropertyController {
     private final PropertyUseCase propertyUseCase;
     private final PropertyWebMapper propertyWebMapper;
@@ -28,6 +31,7 @@ public class PropertyController {
     // core property management - admin/owner
     @PreAuthorize("hasAnyRole('ADMIN', 'PROPERTY_OWNER')")
     @PostMapping (value = "/properties", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Create a new property listing", description = "Creates a property listing with images and documents. Requires multipart/form-data.")
     public ResponseEntity<Property> createProperty (
             @Valid @RequestPart("payload")CreatePropertyWebRequest request,
             @RequestPart(value = "images", required = false) MultipartFile[] images,
@@ -40,6 +44,7 @@ public class PropertyController {
 
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
     @PutMapping (value = "/properties/{propertyId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Update property listing", description = "Updates an existing property listing's details and files.")
     public ResponseEntity<Property> updateProperty (
             @Valid @RequestPart("payload")UpdatePropertyWebRequest request,
             @RequestPart(value = "images",required = false) MultipartFile[] images,
@@ -53,6 +58,7 @@ public class PropertyController {
     // TODO check the business context of this action
     @PreAuthorize("hasAnyRole('ADMIN','PROPERTY_OWNER')")
     @PutMapping (value = "/properties/{propertyId}/status")
+    @Operation(summary = "Update property status", description = "Changes the lifecycle status of a property (e.g., ACTIVE, SOLD, RENTED).")
     public ResponseEntity<Property> updatePropertyStatus(
             @PathVariable UUID propertyId,
             @Valid @RequestBody UpdatePropertyStatusWebRequest request

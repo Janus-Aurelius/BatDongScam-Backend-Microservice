@@ -34,6 +34,7 @@ public class ViolationPenaltyAppliedListener {
                     event.reportedUserId(), event.violationId());
         } catch (Exception e) {
             log.error("[KAFKA] Failed to process violation-penalty-applied event in IAM", e);
+            throw new RuntimeException("Failed to process violation-penalty-applied event in IAM", e);
         }
     }
 }

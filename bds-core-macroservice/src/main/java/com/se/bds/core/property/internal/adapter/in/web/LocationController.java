@@ -65,6 +65,11 @@ public class LocationController {
         return ResponseEntity.ok(locationUseCase.getWardsByDistrictId(districtId));
     }
 
+    @PostMapping("/api/internal/locations/wards/names")
+    public ResponseEntity<java.util.Map<UUID, String>> resolveWardNames(@RequestBody List<UUID> wardIds) {
+        return ResponseEntity.ok(locationUseCase.resolveWardNames(wardIds));
+    }
+
     @GetMapping("/public/locations/cities/top")
     public ResponseEntity<List<City>> getTopCities(
             @RequestParam(defaultValue = "0") int offset,

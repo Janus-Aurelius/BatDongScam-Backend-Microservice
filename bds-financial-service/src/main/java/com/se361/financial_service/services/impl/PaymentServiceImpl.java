@@ -175,10 +175,12 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void handleStripeWebhook(String payload, String sigHeader) {
-        log.info("Received Stripe webhook event");
+        log.info("handleStripeWebhook START: payload_length={}, sig={}", 
+            (payload != null ? payload.length() : "null"), sigHeader);
         try {
+            log.info("Constructing Stripe Event...");
             Event event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
-            log.info("Verified Stripe webhook: id={}, type={}", event.getId(), event.getType());
+            log.info("Stripe Event constructed: id={}, type={}", event.getId(), event.getType());
 
             if ("checkout.session.completed".equals(event.getType())) {
                 Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
@@ -197,6 +199,9 @@ public class PaymentServiceImpl implements PaymentService {
                             },
                             () -> log.warn("Payment not found for Stripe session: {}", session.getId())
                     );
+                } else {
+                    log.error("Failed to deserialize Session object for checkout.session.completed event. Raw payload: {}",
+                            event.getDataObjectDeserializer().getRawJson());
                 }
             } else if ("payout.paid".equals(event.getType())) {
                 com.stripe.model.Payout payout =
@@ -207,6 +212,9 @@ public class PaymentServiceImpl implements PaymentService {
                         payoutRepository.save(p);
                         log.info("Stripe Webhook: Payout {} marked PAID", p.getId());
                     }, () -> log.warn("Payout not found for Stripe payout ID: {}", payout.getId()));
+                } else {
+                    log.error("Failed to deserialize Payout object for payout.paid event. Raw payload: {}",
+                            event.getDataObjectDeserializer().getRawJson());
                 }
             } else if ("payout.failed".equals(event.getType())) {
                 com.stripe.model.Payout payout =
@@ -218,6 +226,9 @@ public class PaymentServiceImpl implements PaymentService {
                         payoutRepository.save(p);
                         log.info("Stripe Webhook: Payout {} marked FAILED", p.getId());
                     }, () -> log.warn("Payout not found for Stripe payout ID: {}", payout.getId()));
+                } else {
+                    log.error("Failed to deserialize Payout object for payout.failed event. Raw payload: {}",
+                            event.getDataObjectDeserializer().getRawJson());
                 }
             }
         } catch (SignatureVerificationException e) {

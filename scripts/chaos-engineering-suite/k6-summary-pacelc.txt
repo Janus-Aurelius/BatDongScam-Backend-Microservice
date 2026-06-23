@@ -1,0 +1,21 @@
+     ✓ Write response is 200 OK
+     ✓ Eventually consistent status observed
+
+     checks.........................: 100.00% ✓ 346      ✗ 0   
+     data_received..................: 984 kB  15 kB/s
+     data_sent......................: 196 kB  3.0 kB/s
+     http_req_blocked...............: avg=14.54µs    min=2.35µs  med=5.76µs   max=621.07µs p(90)=9.54µs  p(95)=14.58µs
+     http_req_connecting............: avg=5.66µs     min=0s      med=0s       max=538.48µs p(90)=0s      p(95)=0s     
+     http_req_duration..............: avg=864.42ms   min=12.13ms med=949.86ms max=1.51s    p(90)=1.37s   p(95)=1.44s  
+       { expected_response:true }...: avg=864.42ms   min=12.13ms med=949.86ms max=1.51s    p(90)=1.37s   p(95)=1.44s  
+   ✓ http_req_failed................: 0.00%   ✓ 0        ✗ 521 
+     http_req_receiving.............: avg=683.25µs   min=53.51µs med=505.2µs  max=4.47ms   p(90)=1.3ms   p(95)=2ms    
+     http_req_sending...............: avg=37.41µs    min=7.7µs   med=22.43µs  max=1.28ms   p(90)=69.83µs p(95)=95.08µs
+     http_req_tls_handshaking.......: avg=0s         min=0s      med=0s       max=0s       p(90)=0s      p(95)=0s     
+     http_req_waiting...............: avg=863.7ms    min=11.68ms med=949.69ms max=1.51s    p(90)=1.36s   p(95)=1.44s  
+     http_reqs......................: 521     7.868196/s
+     iteration_duration.............: avg=3.58s      min=1.79s   med=3.61s    max=4.91s    p(90)=4.47s   p(95)=4.6s   
+     iterations.....................: 173     2.612664/s
+   ✓ staleness_window_ms............: avg=916.514451 min=12      med=1003     max=1511     p(90)=1396.8  p(95)=1466.8 
+     vus............................: 1       min=0      max=10
+     vus_max........................: 10      min=10     max=10

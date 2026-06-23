@@ -257,6 +257,7 @@ class PropertyServiceImpl implements PropertyUseCase {
      */
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "propertyDetails", key = "#propertyId")
     public void deleteProperty(UUID propertyId) {
         Property property = getProperty(propertyId);
 

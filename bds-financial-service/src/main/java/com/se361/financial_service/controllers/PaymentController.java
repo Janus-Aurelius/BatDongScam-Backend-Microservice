@@ -13,6 +13,8 @@ import com.se361.financial_service.gateway.CreatePaymentSessionRequest;
 import com.se361.financial_service.gateway.CreatePaymentSessionResponse;
 import com.se361.financial_service.gateway.CreatePayoutSessionRequest;
 import com.se361.financial_service.gateway.CreatePayoutSessionResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,12 +33,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@Tag(name = "Payments", description = "Endpoints for creating and managing financial payments")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SALESAGENT')")
+    @Operation(summary = "Create a new payment", description = "Manually creates a payment record in the system. Typically used by Admins or Sale Agents to initialize deposits or installments.")
     public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
             @Valid @RequestBody CreatePaymentRequest request
     ) {
@@ -46,6 +50,7 @@ public class PaymentController {
 
     @GetMapping("/{paymentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SALESAGENT', 'CUSTOMER', 'PROPERTY_OWNER')")
+    @Operation(summary = "Get payment by ID", description = "Retrieves the detailed information of a specific payment record.")
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentById(
             @PathVariable UUID paymentId
     ) {

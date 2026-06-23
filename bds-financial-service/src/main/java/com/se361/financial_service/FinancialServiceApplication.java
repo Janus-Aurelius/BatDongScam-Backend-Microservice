@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import com.se.bds.security.BdsSecurityAutoConfiguration;
 
-@SpringBootApplication(exclude = { BdsSecurityAutoConfiguration.class })
+@SpringBootApplication(scanBasePackages = {"com.se361.financial_service", "com.se.bds.security"})
 @EnableScheduling
 public class FinancialServiceApplication {
 

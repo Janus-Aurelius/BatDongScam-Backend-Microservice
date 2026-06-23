@@ -12,4 +12,5 @@ public interface IndividualCustomerPotentialMonthRepository
         extends MongoRepository<IndividualCustomerPotentialMonth, String> {
 
     Optional<IndividualCustomerPotentialMonth> findByCustomerIdAndMonthAndYear(UUID customerId, Integer month, Integer year);
+    java.util.List<IndividualCustomerPotentialMonth> findAllByCustomerIdInAndMonthAndYear(java.util.List<UUID> customerIds, Integer month, Integer year);
 }

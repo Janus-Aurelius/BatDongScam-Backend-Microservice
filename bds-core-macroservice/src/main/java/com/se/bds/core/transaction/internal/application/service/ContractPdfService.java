@@ -8,6 +8,7 @@ import com.se.bds.core.transaction.internal.domain.model.PdfStatus;
 import com.se.bds.core.transaction.internal.domain.model.RentalContract;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class ContractPdfService implements ContractPdfUseCase {
 
     @Override
     @Async("pdfGenerationExecutor")
+    @Bulkhead(name = "pdfGenerationBulkhead")
     @Transactional
     public void generateAndUploadContractPdf(UUID contractId) {
         log.info("[ACCOUNTS] Initiated asynchronous PDF generation for rental contractId={}", contractId);

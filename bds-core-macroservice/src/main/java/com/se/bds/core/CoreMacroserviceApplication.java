@@ -21,7 +21,19 @@ public class CoreMacroserviceApplication {
 
     public static void main(String[] args) {
         loadDotEnv();
-        SpringApplication.run(CoreMacroserviceApplication.class, args);
+        try {
+            SpringApplication.run(CoreMacroserviceApplication.class, args);
+        } catch (Throwable t) {
+            System.err.println("=== FATAL STARTUP ERROR IN CORE MACROSERVICE ===");
+            t.printStackTrace(System.err);
+            Throwable cause = t;
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+                System.err.println("Caused by: " + cause);
+                cause.printStackTrace(System.err);
+            }
+            System.exit(1);
+        }
     }
 
     private static void loadDotEnv() {

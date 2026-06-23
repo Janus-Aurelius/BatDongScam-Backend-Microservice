@@ -17,6 +17,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
         log.error("[BusinessException] Code: {}, Message: {}", ex.getCode(), ex.getMessage());
+        if ("CONCURRENCY_CONFLICT".equals(ex.getCode())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(ex.getMessage()));
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
@@ -25,6 +29,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(MSG2.MESSAGE));
+    }
+
+    @ExceptionHandler({org.springframework.orm.ObjectOptimisticLockingFailureException.class, jakarta.persistence.OptimisticLockException.class})
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockException(Exception ex) {
+        log.error("[OptimisticLockException] Concurrent modification failure", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("Concurrent update detected. Please try again."));
     }
 
     @ExceptionHandler(Exception.class)

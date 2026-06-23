@@ -27,9 +27,9 @@ public class ContractQueryController {
 
     /**
      * Retrieve generic contract details by contract ID.
-     * Accessible by participative roles: CUSTOMER, PROPERTY_OWNER, SALEAGENT, ADMIN.
+     * Accessible by participative roles: CUSTOMER, PROPERTY_OWNER, SALESAGENT, ADMIN.
      */
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT','CUSTOMER','PROPERTY_OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT','CUSTOMER','PROPERTY_OWNER')")
     @GetMapping("/{contractId}")
     public ResponseEntity<Contract> getContractById(@PathVariable UUID contractId) {
         return ResponseEntity.ok(contractQueryUseCase.getContractById(contractId));
@@ -39,7 +39,7 @@ public class ContractQueryController {
      * Get paginated and filtered contract workload lists.
      * Accessible by administrative/sales management roles: ADMIN, SALEAGENT.
      */
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @GetMapping
     public ResponseEntity<Page<Contract>> getContracts(
             @RequestParam(defaultValue = "0") int page,

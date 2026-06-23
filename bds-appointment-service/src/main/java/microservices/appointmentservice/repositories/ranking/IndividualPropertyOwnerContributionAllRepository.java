@@ -12,4 +12,5 @@ public interface IndividualPropertyOwnerContributionAllRepository
         extends MongoRepository<IndividualPropertyOwnerContributionAll, String> {
 
     Optional<IndividualPropertyOwnerContributionAll> findByOwnerId(UUID ownerId);
+    java.util.List<IndividualPropertyOwnerContributionAll> findAllByOwnerIdIn(java.util.List<UUID> ownerIds);
 }

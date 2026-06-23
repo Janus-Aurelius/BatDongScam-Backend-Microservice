@@ -2,6 +2,13 @@ server:
   port: ${SERVER_PORT:8081}
 
 spring:
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      time-to-live: 3600000 # 1 hour default expiration to prevent permanent cache leaks
   application:
     name: core-macroservice
   flyway:
@@ -16,6 +23,11 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/batdongsan_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
   sql:
     init:
       mode: always
@@ -57,6 +69,16 @@ iam:
 resilience4j:
   circuitbreaker:
     instances:
+      iamUserValidation:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        ignoreExceptions:
+          - com.se.bds.common.exception.BusinessException
       searchServiceCircuitBreaker:
         slidingWindowSize: 10
         failureRateThreshold: 50
@@ -65,4 +87,12 @@ resilience4j:
     instances:
       searchServiceRetry:
         maxAttempts: 3
-        waitDuration: 2000
+        waitDuration: 2000
+  bulkhead:
+    instances:
+      pdfGenerationBulkhead:
+        maxConcurrentCalls: 3
+        maxWaitDuration: 100ms
+      reportExportBulkhead:
+        maxConcurrentCalls: 2
+        maxWaitDuration: 100ms

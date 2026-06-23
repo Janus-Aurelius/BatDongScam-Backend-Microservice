@@ -21,28 +21,28 @@ public class PurchaseContractController {
     private final PurchaseContractUseCase purchaseContractUseCase;
     private final TransactionWebMapper transactionWebMapper;
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping
     public ResponseEntity<PurchaseContract> createPurchaseContract(@Valid @RequestBody CreatePurchaseContractWebRequest createPurchaseContractWebRequest) {
         CreatePurchaseContractCommand command = transactionWebMapper.toCreatePurchaseContractCommand(createPurchaseContractWebRequest);
         return ResponseEntity.ok(purchaseContractUseCase.createPurchaseContract(command));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/approve")
     public ResponseEntity<PurchaseContract> approvePurchaseContract(@PathVariable UUID contractId)
     {
         return ResponseEntity.ok(purchaseContractUseCase.approvePurchaseContract(contractId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/paperwork-compete")
     public ResponseEntity<PurchaseContract> markPaperworkComplete(@PathVariable UUID contractId)
     {
         return ResponseEntity.ok(purchaseContractUseCase.markPurchaseContractPaperworkComplete(contractId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','SALESAGENT')")
     @PostMapping("/{contractId}/cancel")
     public ResponseEntity<PurchaseContract> cancelPurchaseContract(@PathVariable UUID contractId)
     {

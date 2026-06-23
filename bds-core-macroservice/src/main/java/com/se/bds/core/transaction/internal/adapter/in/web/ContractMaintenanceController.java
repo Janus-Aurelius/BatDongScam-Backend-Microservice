@@ -18,7 +18,7 @@ import java.util.UUID;
 public class ContractMaintenanceController {
     private final ContractMaintenanceUseCase contractMaintenanceUseCase;
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SALEAGENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALESAGENT')")
     @PutMapping("/{contractId}")
     public ResponseEntity<Void> updateContractDraft(
             @PathVariable UUID contractId,

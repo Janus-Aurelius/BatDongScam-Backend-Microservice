@@ -31,9 +31,10 @@ public class StripeWebhookController {
         try {
             paymentService.handleStripeWebhook(payload, sigHeader);
             return ResponseEntity.ok(new ApiResponse<>(true, "Webhook processed successfully", null));
-        } catch (Exception e) {
-            log.error("Failed to process Stripe webhook", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        } catch (Throwable e) {
+            log.error("FATAL WEBHOOK ERROR: {} - {}", e.getClass().getName(), e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to process webhook: " + e.getMessage()));
         }
     }

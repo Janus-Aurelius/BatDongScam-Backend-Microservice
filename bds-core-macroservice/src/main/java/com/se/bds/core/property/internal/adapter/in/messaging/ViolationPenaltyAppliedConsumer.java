@@ -19,22 +19,19 @@ public class ViolationPenaltyAppliedConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "violation-penalty-applied", groupId = "core-macroservice-violation")
-    public void consumeViolationPenaltyApplied(@Payload String payload) {
+    public void consumeViolationPenaltyApplied(@Payload String payload) throws Exception {
         log.info("[KAFKA] Received violation-penalty-applied event, payload={}", payload);
-        try {
-            ViolationPenaltyAppliedEvent event = objectMapper.readValue(payload, ViolationPenaltyAppliedEvent.class);
-            log.info("[KAFKA] Parsed violation-penalty-applied event: ID={}, reportedEntityId={}, reportedEntityType={}, penaltyApplied={}",
-                    event.violationId(), event.reportedEntityId(), event.reportedEntityType(), event.penaltyApplied());
+        // Bubble deserialization or business execution exceptions up to trigger the Kafka CommonErrorHandler
+        ViolationPenaltyAppliedEvent event = objectMapper.readValue(payload, ViolationPenaltyAppliedEvent.class);
+        log.info("[KAFKA] Parsed violation-penalty-applied event: ID={}, reportedEntityId={}, reportedEntityType={}, penaltyApplied={}",
+                event.violationId(), event.reportedEntityId(), event.reportedEntityType(), event.penaltyApplied());
 
-            if ("PROPERTY".equalsIgnoreCase(event.reportedEntityType()) && "REMOVED_POST".equalsIgnoreCase(event.penaltyApplied())) {
-                log.info("[KAFKA] Executing REMOVED_POST penalty for property ID={}", event.reportedEntityId());
-                propertyUseCase.updatePropertyStatus(event.reportedEntityId(), new UpdatePropertyStatusCommand("REMOVED"));
-                log.info("[KAFKA] Successfully set property ID={} status to REMOVED", event.reportedEntityId());
-            } else {
-                log.info("[KAFKA] Event did not match Core-owned property penalty. Skipping action.");
-            }
-        } catch (Exception e) {
-            log.error("[KAFKA] Failed to deserialize or process ViolationPenaltyAppliedEvent", e);
+        if ("PROPERTY".equalsIgnoreCase(event.reportedEntityType()) && "REMOVED_POST".equalsIgnoreCase(event.penaltyApplied())) {
+            log.info("[KAFKA] Executing REMOVED_POST penalty for property ID={}", event.reportedEntityId());
+            propertyUseCase.updatePropertyStatus(event.reportedEntityId(), new UpdatePropertyStatusCommand("REMOVED"));
+            log.info("[KAFKA] Successfully set property ID={} status to REMOVED", event.reportedEntityId());
+        } else {
+            log.info("[KAFKA] Event did not match Core-owned property penalty. Skipping action.");
         }
     }
 }

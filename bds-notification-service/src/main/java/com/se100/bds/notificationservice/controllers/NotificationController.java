@@ -89,7 +89,7 @@ public class NotificationController {
     public ResponseEntity<ApiResponse<Void>> createNotification(
             @RequestBody CreateNotificationRequest request
     ) {
-        notificationService.createNotification(
+        notificationService.createNotificationAsync(
                 request.getRecipientId(),
                 request.getFcmToken(),
                 request.getType(),

@@ -1,0 +1,80 @@
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: bds-otel-collector
+    volumes:
+      - ./otel-config/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8889:8889" # Prometheus exporter
+    networks:
+      - bds-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bds-prometheus
+    volumes:
+      - ./prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - bds-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: bds-jaeger
+    ports:
+      - "16686:16686" # UI
+      - "4317"       # OTLP gRPC (internal)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - bds-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: bds-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - bds-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bds-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana-provisioning/dashboards/definitions:/etc/grafana/provisioning/dashboards/definitions
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    networks:
+      - bds-network
+
+  health-watchdog:
+    image: curlimages/curl:latest
+    container_name: bds-health-watchdog
+    command: >
+      sh -c "while true; do 
+        echo 'Checking observability stack health...';
+        curl -s --retry 3 --connect-timeout 5 http://prometheus:9090/-/healthy && 
+        curl -s --retry 3 https://hc-ping.com/37e09e27-7b2f-42bb-b207-3f7a8f6e9ad2 &&
+        echo 'Health ping sent successfully.';
+        sleep 60; 
+      done"
+    depends_on:
+      prometheus:
+        condition: service_started
+    networks:
+      - bds-network
+
+networks:
+  bds-network:
+    name: bds-network
+    driver: bridge
